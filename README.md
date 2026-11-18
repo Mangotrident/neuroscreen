@@ -68,6 +68,17 @@ Confound checks: sex alone gives 0.61 AUC on both datasets. Removing the 10 Ital
 
 ## Run it
 
+**Quick start (no data download):** the page and the browser tests need only Node and Python 3.
+
+```bash
+node tests/metrics_synthetic.js          # face, walking, tap and spiral measures recover injected values
+node tests/baseline_sim.js               # false-alarm and detection rates of the weekly engine
+python scripts/build_page.py             # -> dist/demo.html (the committed copy is already built)
+cd dist && python -m http.server         # open http://localhost:8000/demo.html
+```
+
+**Full pipeline** (retrains and re-evaluates everything from the public datasets):
+
 ```bash
 pip install -r requirements.txt
 bash scripts/get_data.sh                 # ~1.5 GB, all datasets CC BY 4.0
