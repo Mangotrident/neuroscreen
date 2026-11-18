@@ -2,6 +2,10 @@
 const fs = require("fs"), path = require("path");
 const V = require("../web/voice.js");
 const dir = path.join(__dirname, "fixtures");
+if (!fs.existsSync(path.join(dir, "expected.json"))) {
+  console.error("No fixtures yet. Run `bash scripts/get_data.sh` and `python tests/make_fixtures.py` first.");
+  process.exit(1);
+}
 const meta = JSON.parse(fs.readFileSync(path.join(dir, "expected.json")));
 let worst = {}, fails = 0;
 for (const m of meta) {
