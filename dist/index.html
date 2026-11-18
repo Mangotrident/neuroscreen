@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroScreen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout idea: a lab notebook. Graph-paper instrument panels for the two live tests, then the evidence. */
+  --paper: #f3f5f8;
+  --card: #ffffff;
+  --ink: #131b27;
+  --muted: #5b6678;
+  --grid: #dde3eb;
+  --accent: #2343c9;
+  --control: #23806f;
+  --pd: #c4452b;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e141e; --card: #151d2a; --ink: #e5eaf2; --muted: #9aa6b8; --grid: #243044;
+    --accent: #8098ff; --control: #4cc0ad; --pd: #ff7d5e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e141e; --card: #151d2a; --ink: #e5eaf2; --muted: #9aa6b8; --grid: #243044;
+  --accent: #8098ff; --control: #4cc0ad; --pd: #ff7d5e; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.4rem, 5.5vw, 4.1rem); line-height: 1.02; }
+h1 em { font-style: italic; color: var(--accent); }
+h2 { font-size: clamp(1.8rem, 3.4vw, 2.5rem); line-height: 1.1; }
+h3 { font-size: 1.55rem; line-height: 1.15; }
+p { margin: 0; max-width: 66ch; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+small, .small { font-size: 0.86rem; }
+
+header.top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 22px 0 0; flex-wrap: wrap; }
+.brand { font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.brand b { color: var(--accent); font-weight: 500; }
+.hero { display: grid; gap: 22px; padding: 36px 0 30px; }
+.hero p.lede { font-size: 1.15rem; color: var(--muted); }
+
+.findings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--grid); border: 1px solid var(--grid); border-radius: 10px; overflow: hidden; }
+.finding { background: var(--card); padding: 16px 16px 18px; display: grid; gap: 6px; align-content: start; }
+.finding .num { font-family: var(--font-display); font-size: 2.6rem; line-height: 1; }
+.finding .num .arrow { color: var(--muted); font-size: 1.6rem; }
+.finding .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.finding.warn .num { color: var(--pd); }
+.finding p { font-size: 0.9rem; }
+
+section { padding: 34px 0; border-top: 1px solid var(--grid); }
+.section-head { display: grid; gap: 8px; margin-bottom: 20px; }
+.label { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+.panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.panel { background: var(--card); border: 1px solid var(--grid); border-radius: 12px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+button, .filebtn { font: 500 0.88rem var(--font-body); border-radius: 7px; border: 1px solid var(--grid); background: var(--paper); color: var(--ink); padding: 8px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+button:hover, .filebtn:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] button.primary { color: #0e141e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #0e141e; } }
+button:focus-visible, .filebtn:focus-within, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[disabled] { opacity: 0.55; cursor: progress; }
+.filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.status { font-size: 0.86rem; color: var(--muted); min-height: 1.4em; }
+.status.err { color: var(--pd); }
+.source-chip { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--grid); color: var(--muted); }
+
+.scorebox { display: grid; gap: 8px; padding: 12px; border-radius: 9px; background: var(--paper); }
+.score-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score-num { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; }
+.scale { position: relative; height: 12px; border-radius: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--control) 55%, transparent), color-mix(in srgb, var(--grid) 80%, transparent) 50%, color-mix(in srgb, var(--pd) 55%, transparent)); }
+.scale .mark { position: absolute; top: -5px; width: 3px; height: 22px; background: var(--ink); border-radius: 2px; transform: translateX(-1px); transition: left 0.5s ease; }
+.scale .half { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.scale-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+
+.plot { width: 100%; display: block; border-radius: 8px; background: var(--paper); }
+.biomarkers { display: grid; gap: 2px; }
+.bm { display: grid; grid-template-columns: 9.5rem 4.8rem minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--grid); }
+.bm:last-child { border-bottom: 0; }
+.bm .name { font-size: 0.86rem; }
+.bm .val { font-family: var(--font-mono); font-size: 0.86rem; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); }
+.legend i { display: inline-block; width: 18px; height: 8px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+
+.spiral-wrap { position: relative; }
+#spiralCanvas { width: 100%; aspect-ratio: 1 / 1; touch-action: none; cursor: crosshair; border-radius: 10px; display: block; background: var(--paper); }
+.hint { position: absolute; left: 12px; bottom: 10px; right: 12px; font-size: 0.8rem; color: var(--muted); pointer-events: none; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--paper); border-radius: 8px; padding: 9px 10px; display: grid; gap: 2px; }
+.tile .v { font-family: var(--font-mono); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.tile .k { font-size: 0.76rem; color: var(--muted); line-height: 1.3; }
+.note { font-size: 0.82rem; color: var(--muted); border-left: 2px solid var(--grid); padding-left: 10px; }
+
+.evidence { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.ev { background: var(--card); border: 1px solid var(--grid); border-radius: 12px; padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.ev.wide { grid-column: 1 / -1; }
+.chart { width: 100%; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { font-weight: 600; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 500; }
+.pill.bad { background: color-mix(in srgb, var(--pd) 16%, transparent); color: var(--pd); }
+.pill.ok { background: color-mix(in srgb, var(--control) 16%, transparent); color: var(--control); }
+.pill.mid { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.table-wrap { overflow-x: auto; }
+.method { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.method div { display: grid; gap: 8px; align-content: start; }
+.method p, .method li { font-size: 0.92rem; }
+.method ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+footer { padding: 26px 0 40px; border-top: 1px solid var(--grid); font-size: 0.82rem; color: var(--muted); display: grid; gap: 8px; }
+a { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .findings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panels, .evidence, .method { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .findings { grid-template-columns: 1fr; }
+  .bm { grid-template-columns: 7.6rem 4.2rem minmax(0, 1fr); gap: 6px; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .scale .mark { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><b>NeuroScreen</b> · voice + spiral · research demo</div>
+    <div class="small muted">Not a medical device. Nothing you record leaves this page.</div>
+  </header>
+
+  <div class="hero">
+    <h1>Can a spiral and an <em>"aaah"</em> reveal Parkinson's?</h1>
+    <p class="lede">NeuroScreen measures voice and hand tremor right in your browser. It also shows how its accuracy holds up on people it has never seen, which is where most published voice-AI numbers fall apart.</p>
+    <div class="findings" id="findings"></div>
+  </div>
+
+  <section id="demo">
+    <div class="section-head">
+      <div class="label">Live demo</div>
+      <h2>Try both tests</h2>
+      <p class="muted">Each panel opens with a synthetic example already analysed. Replace it with your own voice or drawing.</p>
+    </div>
+    <div class="panels">
+      <!-- VOICE -->
+      <div class="panel" id="voicePanel">
+        <div class="panel-head">
+          <h3>1 · Voice</h3>
+          <span class="source-chip" id="voiceSource">synthetic example</span>
+        </div>
+        <p class="small muted">Take a breath and hold a steady "aaah" at a comfortable pitch and loudness for about 5 seconds.</p>
+        <div class="controls">
+          <button class="primary" id="recBtn" type="button">Record 5 seconds</button>
+          <label class="filebtn" for="voiceFile">Upload recording<input type="file" id="voiceFile" accept="audio/*,.wav,.m4a,.mp3"></label>
+          <button id="synSteady" type="button">Synthetic steady voice</button>
+          <button id="synRough" type="button">Synthetic rough voice</button>
+        </div>
+        <div class="status" id="voiceStatus" role="status"></div>
+        <div class="scorebox">
+          <div class="score-row">
+            <div><div class="small muted">Model output</div><div class="score-num mono" id="scoreNum">–</div></div>
+            <div class="small" id="scoreText" style="max-width: 32ch;"></div>
+          </div>
+          <div class="scale"><div class="half"></div><div class="mark" id="scoreMark" style="left: 50%"></div></div>
+          <div class="scale-labels"><span>like the control group</span><span>0.5</span><span>like the Parkinson's group</span></div>
+        </div>
+        <canvas class="plot" id="waveCanvas" height="120" aria-label="Waveform of the analysed vowel with one tick per detected vocal-fold cycle"></canvas>
+        <div class="legend"><span><i style="background: var(--control)"></i>middle 50% of controls</span><span><i style="background: var(--pd)"></i>middle 50% of Parkinson's</span><span><i style="background: var(--ink); width: 3px;"></i>your value</span></div>
+        <div class="biomarkers" id="biomarkers"></div>
+        <p class="note" id="voiceNote"></p>
+      </div>
+
+      <!-- SPIRAL -->
+      <div class="panel" id="spiralPanel">
+        <div class="panel-head">
+          <h3>2 · Hand</h3>
+          <span class="source-chip" id="spiralSource">synthetic example</span>
+        </div>
+        <p class="small muted">Start at the centre and draw a spiral outward, about three turns, without rushing. A finger or stylus works best; a mouse adds its own wobble.</p>
+        <div class="spiral-wrap">
+          <canvas id="spiralCanvas" tabindex="0" aria-label="Drawing area for the spiral test"></canvas>
+          <div class="hint" id="spiralHint"></div>
+        </div>
+        <div class="controls">
+          <button id="clearSpiral" type="button">Clear and draw</button>
+          <button id="synSpiralSteady" type="button">Synthetic steady hand</button>
+          <button id="synSpiralTremor" type="button">Synthetic 5 Hz tremor</button>
+        </div>
+        <div class="status" id="spiralStatus" role="status"></div>
+        <div class="tiles" id="spiralTiles"></div>
+        <canvas class="plot" id="specCanvas" height="120" aria-label="Spectrum of the drawing's radial wobble, with the 4 to 12 hertz tremor band shaded"></canvas>
+        <p class="note" id="spiralNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <div class="section-head">
+      <div class="label">Evaluation</div>
+      <h2>How the accuracy was tested</h2>
+      <p class="muted">Apart from the bars marked leaky, every number below comes from splits that keep all of a person's recordings on one side, so the model is always scored on people it has never heard. AUC: 0.5 is a coin flip, 1.0 is perfect ranking.</p>
+    </div>
+    <div class="evidence">
+      <div class="ev">
+        <h3>Letting people leak into the test set inflates the score</h3>
+        <p class="small muted" id="leakText"></p>
+        <div class="chart" id="leakChart"></div>
+      </div>
+      <div class="ev">
+        <h3>The Italian dataset's near-perfect score is mostly the room</h3>
+        <p class="small muted" id="shortcutText"></p>
+        <div class="chart" id="shortcutChart"></div>
+      </div>
+      <div class="ev wide">
+        <h3>The browser model on people, countries and microphones it never saw</h3>
+        <div class="table-wrap"><table id="extTable"></table></div>
+        <p class="small muted" id="extText"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-head">
+      <div class="label">Method</div>
+      <h2>What runs, and what it can't tell you</h2>
+    </div>
+    <div class="method">
+      <div>
+        <h3>Voice pipeline</h3>
+        <ul>
+          <li>Audio is resampled to 16 kHz, and the steady middle of the vowel is kept (at most 4 s).</li>
+          <li>Pitch comes from windowed autocorrelation. Vocal-fold cycles are found by waveform matching, as Praat does.</li>
+          <li>Ten perturbation measures (jitter, shimmer, period variability, harmonics-to-noise ratio) feed a balanced logistic regression trained on 252 people.</li>
+          <li>The browser code is a line-by-line port of the Python extractor. The two agree to within 10<sup>-11</sup> on 24 real recordings.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Spiral pipeline</h3>
+        <ul>
+          <li>The pen path is resampled to 100 Hz, and the best-fitting Archimedean spiral is found by searching for its centre.</li>
+          <li>The wobble around that ideal spiral is measured in radii, so screen size doesn't matter.</li>
+          <li>Tremor-band share is the fraction of that wobble's energy between 4 and 12 Hz, where Parkinsonian and essential tremor sit.</li>
+          <li>The spiral test shows measurements only. The validated tablet model relies on device-specific features a browser can't reproduce.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Limits</h3>
+        <ul>
+          <li>Trained on one Turkish clinic. Your microphone, room and compression shift every measure; uncompressed WAV is best.</li>
+          <li>At the default threshold the model misses many cases on new datasets. It needs recalibrating per site before any screening use.</li>
+          <li>Alzheimer's and stroke modules are not included. The datasets they need (DementiaBank, TORGO) require access agreements.</li>
+          <li>This is a research demo. It cannot diagnose anything, and a high score does not mean you have Parkinson's.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Data: Sakar et al. 2018, UCI Parkinson's Disease Classification (CC BY 4.0) · Little et al. 2007, UCI Oxford Parkinson's (CC BY 4.0) · Dimauro &amp; Girardi 2019, Italian Parkinson's Voice and Speech, IEEE DataPort (CC BY 4.0) · Isenkul et al. 2014, UCI spiral drawings (CC BY 4.0).</div>
+    <div>Recordings and drawings are processed in your browser and never uploaded.</div>
+  </footer>
+</div>
+
+<script>/* Line-by-line JavaScript port of neuroscreen/voice_features.py.
+   Input: Float64Array/Float32Array at 16 kHz. Output: same feature dictionary as Python.
+   tests/parity.js checks the two implementations agree on real recordings. */
+(function (root) {
+  "use strict";
+  const SR = 16000, FRAME = 640, HOP = 160, FMIN = 60.0, FMAX = 500.0;
+  const VOICING_THRESHOLD = 0.45, MAX_PERIOD_FACTOR = 1.3, MAX_AMP_FACTOR = 1.6;
+  const FEATURE_NAMES = [
+    "jitter_local", "jitter_rap", "jitter_ppq5", "period_cv",
+    "shimmer_local", "shimmer_db", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11",
+    "hnr_db", "cpp_db",
+    "f0_sd_semitones", "f0_range_semitones", "f0_tremor_ratio",
+    "amp_sd_db", "amp_tremor_ratio", "voiced_fraction",
+  ];
+
+  // ---------- small numeric helpers matching numpy behaviour ----------
+  function roundHalfEven(v) {           // Python's round()
+    const f = Math.floor(v), d = v - f;
+    if (d > 0.5) return f + 1;
+    if (d < 0.5) return f;
+    return (f % 2 === 0) ? f : f + 1;
+  }
+  const mean = (a) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i]; return s / a.length; };
+  const std = (a) => { const m = mean(a); let s = 0; for (let i = 0; i < a.length; i++) s += (a[i] - m) ** 2; return Math.sqrt(s / a.length); };
+  function median(a) { const b = Array.from(a).sort((x, y) => x - y); const n = b.length; return n % 2 ? b[(n - 1) / 2] : 0.5 * (b[n / 2 - 1] + b[n / 2]); }
+  function percentile(a, q) {           // numpy default ("linear")
+    const b = Array.from(a).sort((x, y) => x - y); const pos = (b.length - 1) * q / 100;
+    const lo = Math.floor(pos), hi = Math.ceil(pos); return b[lo] + (b[hi] - b[lo]) * (pos - lo);
+  }
+  function argmax(a, lo, hi) { let k = lo, m = -Infinity; for (let i = lo; i < hi; i++) if (a[i] > m) { m = a[i]; k = i; } return k - lo; }
+  function polyfit1(x, y) {             // least-squares line, returns [slope, intercept]
+    const n = x.length; let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (let i = 0; i < n; i++) { sx += x[i]; sy += y[i]; sxx += x[i] * x[i]; sxy += x[i] * y[i]; }
+    const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx); return [slope, (sy - slope * sx) / n];
+  }
+  const hann = (n) => { const w = new Float64Array(n); for (let i = 0; i < n; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n); return w; };
+  const hamming = (n) => { const w = new Float64Array(n); for (let i = 0; i < n; i++) w[i] = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (n - 1)); return w; };
+
+  // in-place radix-2 complex FFT (n must be a power of two)
+  function fft(re, im, inverse) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit;
+      if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = 2 * Math.PI / len * (inverse ? 1 : -1), wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < len / 2; k++) {
+          const a = i + k, b = a + len / 2;
+          const tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+          const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+        }
+      }
+    }
+    if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+  // autocorrelation (lags 0..maxLag-1) of a real segment via zero-padded FFT
+  function autocorr(seg, nfft, maxLag) {
+    const re = new Float64Array(nfft), im = new Float64Array(nfft);
+    re.set(seg); fft(re, im, false);
+    for (let i = 0; i < nfft; i++) { re[i] = re[i] * re[i] + im[i] * im[i]; im[i] = 0; }
+    fft(re, im, true); return re.slice(0, maxLag);
+  }
+
+  function frameRmsDb(x) {
+    const n = 1 + Math.max(0, Math.floor((x.length - FRAME) / HOP)); const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) { let s = 0; const a = i * HOP, b = Math.min(a + FRAME, x.length); for (let j = a; j < b; j++) s += x[j] * x[j]; out[i] = 10 * Math.log10(s / (b - a) + 1e-12); }
+    return out;
+  }
+
+  function selectRegion(x) {
+    const db = frameRmsDb(x); let mx = -Infinity; for (const v of db) mx = Math.max(mx, v);
+    let bestLen = 0, bestStart = 0, runStart = null;
+    for (let i = 0; i <= db.length; i++) {
+      const v = i < db.length && db[i] > mx - 25.0;
+      if (v && runStart === null) runStart = i;
+      else if (!v && runStart !== null) { if (i - runStart > bestLen) { bestLen = i - runStart; bestStart = runStart; } runStart = null; }
+    }
+    let a = bestStart * HOP, b = (bestStart + bestLen - 1) * HOP + FRAME;
+    const trim = Math.trunc(0.15 * (b - a)); a += trim; b -= trim;
+    const maxLen = 4 * SR;
+    if (b - a > maxLen) { const c = Math.floor((a + b) / 2); a = c - maxLen / 2; b = c + maxLen / 2; }
+    return x.slice(a, b);
+  }
+
+  function autocorrPitch(x) {
+    const win = hann(FRAME), nfft = 2048;
+    const rw0 = autocorr(win, nfft, FRAME); const rw = rw0.map((v) => v / rw0[0]);
+    const lagMin = Math.floor(SR / FMAX), lagMax = Math.ceil(SR / FMIN);
+    const n = 1 + Math.max(0, Math.floor((x.length - FRAME) / HOP));
+    const f0 = new Float64Array(n), rbest = new Float64Array(n);
+    const seg = new Float64Array(FRAME);
+    for (let i = 0; i < n; i++) {
+      let m = 0; for (let j = 0; j < FRAME; j++) m += x[i * HOP + j]; m /= FRAME;
+      for (let j = 0; j < FRAME; j++) seg[j] = (x[i * HOP + j] - m) * win[j];
+      let r = autocorr(seg, nfft, FRAME);
+      if (r[0] <= 1e-12) continue;
+      const r0 = r[0]; for (let j = 0; j < FRAME; j++) r[j] = (r[j] / r0) / Math.max(rw[j], 1e-3);
+      const segR = r.slice(lagMin, lagMax + 1);
+      const cands = []; for (let k = 1; k < segR.length - 1; k++) if (segR[k] > segR[k - 1] && segR[k] >= segR[k + 1]) cands.push(k);
+      if (!cands.length) continue;
+      let best = cands[0]; for (const k of cands) if (segR[k] > segR[best]) best = k;
+      for (const k of cands) if (segR[k] >= 0.85 * segR[best]) { best = k; break; }
+      const rv = segR[best]; if (rv < VOICING_THRESHOLD) continue;
+      const y0 = segR[best - 1], y1 = segR[best], y2 = segR[best + 1], denom = y0 - 2 * y1 + y2;
+      const delta = Math.abs(denom) > 1e-12 ? 0.5 * (y0 - y2) / denom : 0.0;
+      f0[i] = SR / (lagMin + best + delta); rbest[i] = Math.min(Math.max(rv, 1e-4), 0.9999);
+    }
+    const sm = Float64Array.from(f0);
+    for (let i = 0; i < n; i++) if (f0[i] > 0) {
+      const w = []; for (let j = Math.max(0, i - 2); j < Math.min(n, i + 3); j++) if (f0[j] > 0) w.push(f0[j]);
+      sm[i] = median(w);
+    }
+    return [sm, rbest];
+  }
+
+  function cycleMarks(x, f0) {
+    const voiced = Array.from(f0, (v) => v > 0); const nv = voiced.filter(Boolean).length;
+    if (nv < 3) return [[], []];
+    let mx = -Infinity, mn = Infinity; for (const v of x) { if (v > mx) mx = v; if (v < mn) mn = v; }
+    const sig = mx >= -mn ? x : x.map((v) => -v);
+    const vi = []; voiced.forEach((v, i) => { if (v) vi.push(i); });
+    const localPeriod = (t) => {
+      let i = roundHalfEven((t * SR - FRAME / 2) / HOP); i = Math.min(Math.max(i, 0), f0.length - 1);
+      if (f0[i] > 0) return 1.0 / f0[i];
+      let j = vi[0], bd = Infinity; for (const k of vi) { const d = Math.abs(k - i); if (d < bd) { bd = d; j = k; } }
+      return 1.0 / f0[j];
+    };
+    const firstV = voiced.indexOf(true);
+    const tStart = (firstV * HOP + FRAME / 2) / SR;
+    const t0 = localPeriod(tStart);
+    const a = Math.trunc(tStart * SR), b = Math.min(sig.length, a + Math.trunc(t0 * SR) + 1);
+    if (b - a < 3) return [[], []];
+    let pos = a + argmax(sig, a, b); const marks = [pos];
+    while (true) {
+      const k = roundHalfEven(pos);
+      const T = roundHalfEven(localPeriod(k / SR) * SR);
+      const lo = Math.trunc(0.8 * T), hi = Math.trunc(1.25 * T) + 1;
+      if (k + hi + T + 1 >= sig.length || T < 4) break;
+      let rm = 0; for (let j = 0; j < T; j++) rm += sig[k + j]; rm /= T;
+      let nref = 0; for (let j = 0; j < T; j++) nref += (sig[k + j] - rm) ** 2; nref = Math.sqrt(nref) + 1e-12;
+      const cc = new Float64Array(hi - lo + 1);
+      for (let L = lo; L <= hi; L++) {
+        let sm = 0; for (let j = 0; j < T; j++) sm += sig[k + L + j]; sm /= T;
+        let dot = 0, ss = 0;
+        for (let j = 0; j < T; j++) { const s = sig[k + L + j] - sm; dot += (sig[k + j] - rm) * s; ss += s * s; }
+        cc[L - lo] = dot / (nref * (Math.sqrt(ss) + 1e-12));
+      }
+      const j = argmax(cc, 0, cc.length); let delta = 0.0;
+      if (j > 0 && j < cc.length - 1) { const y0 = cc[j - 1], y1 = cc[j], y2 = cc[j + 1], den = y0 - 2 * y1 + y2; delta = Math.abs(den) > 1e-12 ? 0.5 * (y0 - y2) / den : 0.0; }
+      pos = pos + (lo + j + delta); marks.push(pos);
+    }
+    const times = marks.map((m) => m / SR), amps = [];
+    for (let j = 0; j < marks.length - 1; j++) {
+      const s = roundHalfEven(marks[j]), e = roundHalfEven(marks[j + 1]);
+      let hiV = -Infinity, loV = Infinity; for (let q = s; q < e; q++) { if (x[q] > hiV) hiV = x[q]; if (x[q] < loV) loV = x[q]; }
+      amps.push(e > s ? hiV - loV : 0.0);
+    }
+    return [times, amps];
+  }
+
+  function jitterShimmer(times, amps) {
+    const T = []; for (let i = 1; i < times.length; i++) T.push(times[i] - times[i - 1]);
+    const ok = T.map((t) => t > 1.0 / FMAX * 0.9 && t < 1.0 / FMIN * 1.1);
+    const out = {};
+    const okAll = (lo, hi) => { for (let q = lo; q < hi; q++) if (!ok[q]) return false; return true; };
+    const ratio = (w) => Math.max(...w) / Math.min(...w);
+    const diffs = [], rap = [], ppq = [];
+    for (let i = 1; i < T.length; i++) if (ok[i] && ok[i - 1] && Math.max(T[i], T[i - 1]) / Math.min(T[i], T[i - 1]) <= MAX_PERIOD_FACTOR) diffs.push(Math.abs(T[i] - T[i - 1]));
+    for (let i = 1; i < T.length - 1; i++) { const w = T.slice(i - 1, i + 2); if (okAll(i - 1, i + 2) && ratio(w) <= MAX_PERIOD_FACTOR) rap.push(Math.abs(T[i] - mean(w))); }
+    for (let i = 2; i < T.length - 2; i++) { const w = T.slice(i - 2, i + 3); if (okAll(i - 2, i + 3) && ratio(w) <= MAX_PERIOD_FACTOR) ppq.push(Math.abs(T[i] - mean(w))); }
+    const Tok = T.filter((_, i) => ok[i]); const meanT = Tok.length ? mean(Tok) : NaN;
+    out.jitter_local = diffs.length ? mean(diffs) / meanT : NaN;
+    out.jitter_rap = rap.length ? mean(rap) / meanT : NaN;
+    out.jitter_ppq5 = ppq.length ? mean(ppq) / meanT : NaN;
+    out.period_cv = Tok.length > 2 ? std(Tok) / meanT : NaN;
+    const A = amps, okA = A.map((v) => v > 1e-6);
+    const sd = [], sdb = [];
+    for (let i = 1; i < A.length; i++) if (okA[i] && okA[i - 1] && Math.max(A[i], A[i - 1]) / Math.min(A[i], A[i - 1]) <= MAX_AMP_FACTOR) { sd.push(Math.abs(A[i] - A[i - 1])); sdb.push(Math.abs(20 * Math.log10(A[i] / A[i - 1]))); }
+    const Aok = A.filter((_, i) => okA[i]); const meanA = Aok.length ? mean(Aok) : NaN;
+    out.shimmer_local = sd.length ? mean(sd) / meanA : NaN;
+    out.shimmer_db = sdb.length ? mean(sdb) : NaN;
+    for (const [name, half] of [["shimmer_apq3", 1], ["shimmer_apq5", 2], ["shimmer_apq11", 5]]) {
+      const vals = [];
+      for (let i = half; i < A.length - half; i++) {
+        const w = A.slice(i - half, i + half + 1); let allOk = true; for (let q = i - half; q <= i + half; q++) if (!okA[q]) allOk = false;
+        if (allOk && ratio(w) <= MAX_AMP_FACTOR) vals.push(Math.abs(A[i] - mean(w)));
+      }
+      out[name] = vals.length ? mean(vals) / meanA : NaN;
+    }
+    return out;
+  }
+
+  function cpp(x, f0) {
+    const win = hamming(FRAME), nfft = 1024;
+    const q = Array.from({ length: nfft }, (_, i) => i / SR);
+    const qmin = 1.0 / FMAX, qmax = 1.0 / FMIN;
+    const band = [], regX = [], regI = [];
+    for (let i = 0; i < nfft; i++) { if (q[i] >= qmin && q[i] <= qmax) band.push(i); if (q[i] >= 0.001 && q[i] <= qmax) { regX.push(q[i]); regI.push(i); } }
+    const vals = [];
+    for (let i = 0; i < f0.length; i++) {
+      if (!(f0[i] > 0)) continue;
+      if (i * HOP + FRAME > x.length) continue;
+      const re = new Float64Array(nfft), im = new Float64Array(nfft);
+      for (let j = 0; j < FRAME; j++) re[j] = x[i * HOP + j] * win[j];
+      fft(re, im, false);
+      for (let j = 0; j < nfft; j++) { re[j] = 10 * Math.log10(re[j] * re[j] + im[j] * im[j] + 1e-12); im[j] = 0; }
+      fft(re, im, true);
+      const cdb = re.map((c) => 10 * Math.log10(c * c + 1e-12));
+      let k = band[0]; for (const b of band) if (cdb[b] > cdb[k]) k = b;
+      const [slope, icpt] = polyfit1(regX, regI.map((j) => cdb[j]));
+      vals.push(cdb[k] - (slope * q[k] + icpt));
+    }
+    return vals.length ? mean(vals) : NaN;
+  }
+
+  function tremorRatio(contour) {
+    const n = contour.length; if (n < 64) return NaN;
+    const m = mean(contour); let c = contour.map((v) => v - m);
+    if (c.every((v) => Math.abs(v) < 1e-12)) return NaN;
+    const t = c.map((_, i) => i); const [s, b] = polyfit1(t, c); c = c.map((v, i) => v - (s * i + b));
+    const w = hann(n); const dt = HOP / SR; let total = 0, trem = 0;
+    for (let k = 0; k <= Math.floor(n / 2); k++) {
+      const f = k / (n * dt); if (f < 1 || f > 20) continue;
+      let re = 0, im = 0; for (let j = 0; j < n; j++) { const v = c[j] * w[j], a = -2 * Math.PI * k * j / n; re += v * Math.cos(a); im += v * Math.sin(a); }
+      const P = re * re + im * im; total += P; if (f >= 3 && f <= 10) trem += P;
+    }
+    return total > 0 ? trem / total : NaN;
+  }
+
+  function longestRun(values, mask, semitones) {
+    let best = [0, 0], cur = null;
+    for (let i = 0; i <= mask.length; i++) {
+      const m = i < mask.length && mask[i];
+      if (m && cur === null) cur = i;
+      else if (!m && cur !== null) { if (i - cur > best[1] - best[0]) best = [cur, i]; cur = null; }
+    }
+    let v = Array.from(values.slice(best[0], best[1]));
+    if (semitones && v.length) { const md = median(v); v = v.map((u) => 12 * Math.log2(u / md)); }
+    return v;
+  }
+
+  // x: samples at 16 kHz. Also returns intermediate signals for plotting.
+  function extract(x16) {
+    let x = Float64Array.from(x16); const m = mean(x); x = x.map((v) => v - m);
+    let pk = 0; for (const v of x) pk = Math.max(pk, Math.abs(v)); if (pk > 0) x = x.map((v) => v / pk);
+    x = selectRegion(x);
+    const [f0, r] = autocorrPitch(x);
+    const voiced = Array.from(f0, (v) => v > 0);
+    const feats = {}; for (const k of FEATURE_NAMES) feats[k] = NaN;
+    const nv = voiced.filter(Boolean).length;
+    feats.voiced_fraction = voiced.length ? nv / voiced.length : 0;
+    const debug = { region: x, f0, times: [], amps: [] };
+    if (nv < 20) return { feats, debug };
+    const [times, amps] = cycleMarks(x, f0); debug.times = times; debug.amps = amps;
+    if (times.length > 12) Object.assign(feats, jitterShimmer(times, amps));
+    const rv = []; voiced.forEach((v, i) => { if (v) rv.push(r[i]); });
+    feats.hnr_db = mean(rv.map((v) => 10 * Math.log10(v / (1 - v))));
+    feats.cpp_db = cpp(x, f0);
+    const fv = []; voiced.forEach((v, i) => { if (v) fv.push(f0[i]); });
+    const md = median(fv); const st = fv.map((v) => 12 * Math.log2(v / md));
+    feats.f0_sd_semitones = std(st);
+    feats.f0_range_semitones = percentile(st, 95) - percentile(st, 5);
+    feats.f0_tremor_ratio = tremorRatio(longestRun(f0, voiced, true));
+    const db = frameRmsDb(x).slice(0, f0.length);
+    const dbv = []; voiced.forEach((v, i) => { if (v) dbv.push(db[i]); });
+    feats.amp_sd_db = std(dbv);
+    feats.amp_tremor_ratio = tremorRatio(longestRun(db, voiced, false));
+    return { feats, debug };
+  }
+
+  // logistic model exported by scripts/export_model.py
+  function predict(model, feats) {
+    const z = model.features.map((f, i) => {
+      let v = feats[f];
+      if (model.log_features.includes(f) && !Number.isNaN(v)) v = Math.log(Math.max(v, 1e-6));
+      if (v === undefined || Number.isNaN(v)) v = model.impute_median[i];
+      return (v - model.scaler_mean[i]) / model.scaler_scale[i];
+    });
+    let s = model.intercept; z.forEach((v, i) => { s += v * model.coef[i]; });
+    return { prob: 1 / (1 + Math.exp(-s)), contributions: Object.fromEntries(model.features.map((f, i) => [f, z[i] * model.coef[i]])) };
+  }
+
+  // Synthetic sustained /a/: a glottal pulse train with chosen cycle-to-cycle period and amplitude
+  // variation, shaped by three formant resonators, plus breath noise. Used to demo and to check that
+  // the extractor recovers what was injected.
+  function simulate({ f0 = 125, jitter = 0.004, shimmer = 0.03, noiseDb = -35, seconds = 3, seed = 11 } = {}) {
+    let s = seed >>> 0;
+    const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const n = Math.round(seconds * SR), src = new Float64Array(n);
+    // E|g_i - g_{i-1}| = 2/sqrt(pi) for unit gaussians, so scale to hit the requested local jitter/shimmer
+    const kj = jitter / 1.1284, ks = shimmer / 1.1284;
+    let t = 0.01 * SR;
+    while (t < n - 2) {
+      const T = (SR / f0) * (1 + kj * gauss());
+      const A = 1 + ks * gauss();
+      // Rosenberg-like pulse: smooth opening, sharp closure
+      const L = Math.round(0.6 * T);
+      for (let k = 0; k < L && t + k < n; k++) {
+        const ph = k / L, idx = Math.floor(t + k);
+        src[idx] += A * (ph < 0.66 ? 0.5 * (1 - Math.cos(Math.PI * ph / 0.66)) : Math.cos(Math.PI * (ph - 0.66) / (2 * 0.34)));
+      }
+      t += T;
+    }
+    // differentiate (lip radiation) then cascade formant resonators
+    let y = new Float64Array(n); for (let i = 1; i < n; i++) y[i] = src[i] - src[i - 1];
+    for (const [F, B] of [[730, 90], [1090, 110], [2440, 160]]) {
+      const r = Math.exp(-Math.PI * B / SR), c = 2 * r * Math.cos(2 * Math.PI * F / SR), d = -r * r, g = 1 - c - d;
+      const o = new Float64Array(n);
+      for (let i = 0; i < n; i++) o[i] = g * y[i] + c * (i > 0 ? o[i - 1] : 0) + d * (i > 1 ? o[i - 2] : 0);
+      y = o;
+    }
+    let rms = 0; for (const v of y) rms += v * v; rms = Math.sqrt(rms / n);
+    const nAmp = rms * Math.pow(10, noiseDb / 20);
+    for (let i = 0; i < n; i++) y[i] += nAmp * gauss();
+    // fade in/out like a real phonation
+    const f = Math.round(0.15 * SR); for (let i = 0; i < f; i++) { y[i] *= i / f; y[n - 1 - i] *= i / f; }
+    return y;
+  }
+
+  const api = { SR, FEATURE_NAMES, extract, predict, simulate };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroVoice = api;
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>/* Spiral-drawing kinematics. Input: strokes = [[{x, y, t(ms), p}, ...], ...] in any pixel scale.
+   Every measure is scale-free (relative to the spiral's own radius) so a phone, a tablet and a mouse
+   are at least comparable. These are measurements, not a validated classifier. */
+(function (root) {
+  "use strict";
+  const FS = 100; // resample to 100 Hz
+
+  function resample(strokes) {
+    const out = [];
+    for (const s of strokes) {
+      if (s.length < 2) continue;
+      const t0 = s[0].t, t1 = s[s.length - 1].t;
+      let j = 0;
+      for (let t = t0; t <= t1; t += 1000 / FS) {
+        while (j < s.length - 2 && s[j + 1].t < t) j++;
+        const a = s[j], b = s[j + 1], dt = b.t - a.t || 1, u = Math.min(1, Math.max(0, (t - a.t) / dt));
+        out.push({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, p: (a.p ?? 0.5) + ((b.p ?? 0.5) - (a.p ?? 0.5)) * u, t });
+      }
+    }
+    return out;
+  }
+
+  function unwrap(angles) {
+    const out = [angles[0]];
+    for (let i = 1; i < angles.length; i++) {
+      let d = angles[i] - angles[i - 1];
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      out.push(out[i - 1] + d);
+    }
+    return out;
+  }
+
+  // fit r = a + b*theta around a candidate centre; returns rms residual and the fit
+  function fitAt(P, cx, cy) {
+    const th = unwrap(P.map((q) => Math.atan2(q.y - cy, q.x - cx)));
+    const r = P.map((q) => Math.hypot(q.x - cx, q.y - cy));
+    const n = P.length; let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (let i = 0; i < n; i++) { sx += th[i]; sy += r[i]; sxx += th[i] * th[i]; sxy += th[i] * r[i]; }
+    const b = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1), a = (sy - b * sx) / n;
+    let ss = 0; const res = new Float64Array(n);
+    for (let i = 0; i < n; i++) { res[i] = r[i] - (a + b * th[i]); ss += res[i] * res[i]; }
+    return { rms: Math.sqrt(ss / n), a, b, th, r, res, cx, cy };
+  }
+
+  function findCentre(P) {
+    let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+    for (const q of P) { minx = Math.min(minx, q.x); maxx = Math.max(maxx, q.x); miny = Math.min(miny, q.y); maxy = Math.max(maxy, q.y); }
+    const size = Math.max(maxx - minx, maxy - miny);
+    let best = fitAt(P, (minx + maxx) / 2, (miny + maxy) / 2);
+    for (const [span, steps] of [[0.35 * size, 14], [0.05 * size, 10], [0.008 * size, 10]]) {
+      const c0x = best.cx, c0y = best.cy;
+      for (let i = -steps / 2; i <= steps / 2; i++) for (let j = -steps / 2; j <= steps / 2; j++) {
+        const f = fitAt(P, c0x + (i * span) / steps, c0y + (j * span) / steps);
+        if (f.rms < best.rms) best = f;
+      }
+    }
+    return best;
+  }
+
+  function spectrum(sig, fs) {
+    // remove slow drift with a 0.5 s moving average, then Hann window + DFT
+    const n = sig.length, w = Math.round(fs / 2), hp = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      let s = 0, c = 0; for (let j = Math.max(0, i - w); j < Math.min(n, i + w + 1); j++) { s += sig[j]; c++; }
+      hp[i] = sig[i] - s / c;
+    }
+    const freqs = [], power = [];
+    for (let k = 1; k <= Math.floor(n / 2); k++) {
+      const f = (k * fs) / n; if (f > 20) break;
+      let re = 0, im = 0;
+      for (let j = 0; j < n; j++) { const v = hp[j] * (0.5 - 0.5 * Math.cos((2 * Math.PI * j) / n)), a = (-2 * Math.PI * k * j) / n; re += v * Math.cos(a); im += v * Math.sin(a); }
+      freqs.push(f); power.push(re * re + im * im);
+    }
+    return { freqs, power };
+  }
+
+  function analyse(strokes) {
+    const P = resample(strokes);
+    if (P.length < FS * 1.5) return { error: "Draw a bit longer: at least 1.5 seconds of drawing is needed." };
+    const fit = findCentre(P);
+    let R = 0; for (const v of fit.r) R = Math.max(R, v);
+    const turns = Math.abs(fit.th[fit.th.length - 1] - fit.th[0]) / (2 * Math.PI);
+    if (turns < 1.5) return { error: "That doesn't look like a spiral yet: draw at least two turns from the centre outward." };
+    const resNorm = Array.from(fit.res, (v) => v / R);
+    const sp = spectrum(resNorm, FS);
+    let total = 0, band = 0, peakF = 0, peakP = -1;
+    sp.freqs.forEach((f, i) => {
+      if (f >= 1) total += sp.power[i];
+      if (f >= 4 && f <= 12) { band += sp.power[i]; if (sp.power[i] > peakP) { peakP = sp.power[i]; peakF = f; } }
+    });
+    // speed in radii per second, and dimensionless jerk on a lightly smoothed path
+    const sm = (k) => { const o = []; for (let i = 0; i < P.length; i++) { let s = 0, c = 0; for (let j = Math.max(0, i - 2); j <= Math.min(P.length - 1, i + 2); j++) { s += P[j][k]; c++; } o.push(s / c); } return o; };
+    const xs = sm("x"), ys = sm("y"), dt = 1 / FS, speed = [];
+    for (let i = 1; i < P.length; i++) speed.push(Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]) / dt / R);
+    const meanSp = speed.reduce((a, b) => a + b, 0) / speed.length;
+    const sdSp = Math.sqrt(speed.reduce((a, b) => a + (b - meanSp) ** 2, 0) / speed.length);
+    let jerk2 = 0, L = 0;
+    for (let i = 3; i < P.length; i++) {
+      const jx = (xs[i] - 3 * xs[i - 1] + 3 * xs[i - 2] - xs[i - 3]) / dt ** 3, jy = (ys[i] - 3 * ys[i - 1] + 3 * ys[i - 2] - ys[i - 3]) / dt ** 3;
+      jerk2 += (jx * jx + jy * jy) * dt;
+    }
+    for (let i = 1; i < P.length; i++) L += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+    const duration = P.length / FS;
+    const pressures = P.map((q) => q.p);
+    const pm = pressures.reduce((a, b) => a + b, 0) / pressures.length;
+    const pcv = pm > 0 ? Math.sqrt(pressures.reduce((a, b) => a + (b - pm) ** 2, 0) / pressures.length) / pm : NaN;
+    return {
+      metrics: {
+        tremor_band_share: total > 0 ? band / total : NaN,
+        tremor_peak_hz: peakF,
+        radial_irregularity_pct: (100 * fit.rms) / R,
+        speed_cv: sdSp / meanSp,
+        log_dimensionless_jerk: Math.log10(Math.sqrt(0.5 * jerk2 * duration ** 5 / (L * L))),
+        duration_s: duration,
+        turns,
+        pen_lifts: Math.max(0, strokes.filter((s) => s.length > 1).length - 1),
+        pressure_cv: pcv,
+      },
+      fit, R, spectrum: sp, points: P,
+    };
+  }
+
+  // a synthetic spiral for the demo, optionally with a tremor of given frequency and amplitude (fraction of radius)
+  function simulate({ tremorHz = 0, tremorAmp = 0, seconds = 9, turns = 3.5, seed = 7 } = {}) {
+    let s = seed >>> 0; const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const pts = [], R = 150, fs = 120, n = Math.round(seconds * fs);
+    let drift = 0;
+    for (let i = 0; i < n; i++) {
+      const u = i / (n - 1), th = u * turns * 2 * Math.PI, t = (i / fs) * 1000;
+      drift = 0.97 * drift + 0.03 * (rnd() - 0.5) * 0.08;
+      const trem = tremorAmp * Math.sin(2 * Math.PI * tremorHz * (i / fs) + 0.3) * (0.7 + 0.3 * rnd());
+      const r = R * u * (1 + drift) + R * trem + (rnd() - 0.5) * 0.6;
+      pts.push({ x: 200 + r * Math.cos(th), y: 200 + r * Math.sin(th), t, p: 0.5 });
+    }
+    return [pts];
+  }
+
+  const api = { analyse, simulate };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroSpiral = api;
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>
+const MODEL = {"features": ["jitter_local", "jitter_rap", "jitter_ppq5", "period_cv", "shimmer_local", "shimmer_db", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11", "hnr_db"], "log_features": ["jitter_local", "jitter_rap", "jitter_ppq5", "period_cv", "shimmer_local", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11"], "impute_median": [-6.505634664949371, -8.180720954795024, -7.338538195074591, -4.415547606129133, -2.8872366934994336, 0.5025, -3.576265309744802, -3.390109975941537, -3.046080644210619, 19.3095], "scaler_mean": [-6.401111863248238, -8.03215191842037, -7.238615064084238, -3.9393105474998062, -2.881055181045214, 0.6064195357804233, -3.568753261408651, -3.3818877368700666, -3.066223886820649, 18.859632275132274], "scaler_scale": [0.7572521866322998, 1.046699300344485, 0.9032335079913713, 1.2892767997545076, 0.6134349291632674, 0.3823165222887691, 0.6387675989920516, 0.6214693077934884, 0.6114764461564158, 5.572783354824129], "coef": [0.5467963427676241, -0.0019269850266173064, 0.37155380056956766, -0.26703015406320374, 0.5768539360199939, -0.20382118669142762, -0.4703589720516454, -0.47638905471394444, 0.9961377456145771, 0.14039955627498546], "intercept": 0.248254540031336, "reference": {"jitter_local": {"control": {"10": 0.0006106666666666667, "25": 0.0008091666666666667, "50": 0.0011133333333333334, "75": 0.001565, "90": 0.0025506666666666672}, "parkinsons": {"10": 0.0009493333333333334, "25": 0.0012291666666666668, "50": 0.0017766666666666668, "75": 0.0031225000000000003, "90": 0.0052396666666666685}}, "jitter_rap": {"control": {"10": 8.766666666666668e-05, "25": 0.00011333333333333334, "50": 0.000195, "75": 0.00035083333333333337, "90": 0.0005780000000000001}, "parkinsons": {"10": 0.00015, "25": 0.00020583333333333334, "50": 0.000375, "75": 0.0007250000000000001, "90": 0.0014486666666666671}}, "jitter_ppq5": {"control": {"10": 0.00023866666666666668, "25": 0.000295, "50": 0.0004016666666666667, "75": 0.0006833333333333334, "90": 0.0012426666666666669}, "parkinsons": {"10": 0.0003466666666666667, "25": 0.00047666666666666663, "50": 0.0008066666666666666, "75": 0.0014858333333333334, "90": 0.002694}}, "period_cv": {"control": {"10": 0.007126946703091825, "25": 0.008211969048425014, "50": 0.01280828182301935, "75": 0.05758656166234462, "90": 0.1599714458547296}, "parkinsons": {"10": 0.00784128067151951, "25": 0.009840915729555222, "50": 0.016353239794702493, "75": 0.1135238219881934, "90": 0.18946702815946642}}, "shimmer_local": {"control": {"10": 0.021922, "25": 0.030414999999999998, "50": 0.04558166666666666, "75": 0.06686166666666665, "90": 0.10652833333333335}, "parkinsons": {"10": 0.034553, "25": 0.043295, "50": 0.062335, "75": 0.08938166666666666, "90": 0.12211600000000002}}, "shimmer_db": {"control": {"10": 0.1891, "25": 0.27008333333333334, "50": 0.40249999999999997, "75": 0.5881666666666667, "90": 0.9378000000000002}, "parkinsons": {"10": 0.30426666666666663, "25": 0.38216666666666665, "50": 0.5675, "75": 0.8160000000000001, "90": 1.1422}}, "shimmer_apq3": {"control": {"10": 0.011596, "25": 0.015112500000000001, "50": 0.02326333333333333, "75": 0.036565833333333325, "90": 0.060985666666666674}, "parkinsons": {"10": 0.01612, "25": 0.021741666666666666, "50": 0.031683333333333334, "75": 0.04509166666666667, "90": 0.06119459690000006}}, "shimmer_apq5": {"control": {"10": 0.013872333333333334, "25": 0.019137499999999998, "50": 0.027193333333333333, "75": 0.041216666666666665, "90": 0.06044433333333335}, "parkinsons": {"10": 0.020053333333333333, "25": 0.026373333333333335, "50": 0.037145, "75": 0.05456333333333334, "90": 0.07460699999999999}}, "shimmer_apq11": {"control": {"10": 0.019275, "25": 0.024130833333333334, "50": 0.03570833333333333, "75": 0.050765833333333336, "90": 0.07561333333333334}, "parkinsons": {"10": 0.029807999999999998, "25": 0.0393625, "50": 0.0531821925, "75": 0.07555583333333334, "90": 0.09740900000000001}}, "hnr_db": {"control": {"10": 14.077533333333333, "25": 18.637416666666667, "50": 21.891666666666666, "75": 23.979749999999996, "90": 25.951}, "parkinsons": {"10": 10.777666666666667, "25": 15.548166666666667, "50": 18.282833333333336, "75": 21.81725, "90": 24.0911}}}, "trained_on": "Sakar et al. 2018 (UCI, CC BY 4.0): 252 people, 756 sustained /a/ recordings"};
+const RESULTS = {"sakar_n": 252, "sakar_pd": 188, "portable": {"subj_auc": 0.7629321808510638, "subj_bacc": 0.7081615691489361, "subj_sens": 0.6835106382978724, "subj_spec": 0.7328125}, "leak": {"grouped_subj": 0.8998670212765958, "leaky_subj": 0.9860206117021276, "grouped_rec": 0.8817431294326241, "leaky_rec": 0.967507018321513}, "external": {"oxford": {"auc": 0.90625, "bacc": 0.5833333333333334, "sens": 0.16666666666666666, "spec": 1.0, "n_subjects": 32, "n_pd": 24}, "italian": {"auc": 0.4512987012987013, "bacc": 0.44642857142857145, "sens": 0.8928571428571429, "spec": 0.0, "n_subjects": 50, "n_pd": 28}}, "shortcut": {"in_dataset_auc": 0.9857142857142858, "silence_only_auc": 0.8373376623376624, "silence_only_bacc": 0.8022727272727274, "physiology_model_transfer_auc": 0.4512987012987013, "noise_floor_db_median": {"pd": -39.34662104895128, "control": -65.71948996125965}, "biomarker_directions": {"jitter_local": {"pd_median": 0.00407961562482383, "control_median": 0.007098833398052416, "expected": "higher in PD", "observed": "lower in PD"}, "shimmer_local": {"pd_median": 0.029074490002553292, "control_median": 0.05197458063952963, "expected": "higher in PD", "observed": "lower in PD"}, "hnr_db": {"pd_median": 24.583720393519265, "control_median": 18.975330259069253, "expected": "lower in PD", "observed": "higher in PD"}}}, "spiral": {"dataset": "UCI digitized-tablet spiral drawings (Isenkul et al. 2014), features from github.com/shiwalisingh0/Parkinson-disease-detection-", "n_people": 77, "n_pd": 62, "n_control": 15, "all_tests": {"auc": 0.871989247311828, "auc_sd": 0.021768484582793825, "balanced_accuracy": 0.8633602150537636}, "static_spiral_only": {"auc": 0.8059139784946237, "auc_sd": 0.027817580455578635, "balanced_accuracy": 0.789731182795699}}};
+</script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const fmt = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v)) ? "–" : Number(v).toFixed(d);
+
+  // ---------------- findings strip ----------------
+  const R = RESULTS;
+  const findings = [
+    { num: fmt(R.portable.subj_auc, 2), tag: "browser model, unseen people", text: `AUC on ${R.sakar_n} people held out by person (Sakar 2018, 10 voice measures the browser computes).` },
+    { num: fmt(R.external.oxford.auc, 2), tag: "different country", text: `AUC on the Oxford cohort (${R.external.oxford.n_subjects} people, US recordings) it never trained on. It ranks people well, but its threshold needs recalibrating.` },
+    { num: `${fmt(R.leak.leaky_subj, 2)}<span class="arrow"> → </span>${fmt(R.leak.grouped_subj, 2)}`, tag: "leakage", text: "The full 752-feature model's AUC with a person's recordings allowed on both sides of the split, then with each person kept on one side." },
+    { num: fmt(R.shortcut.silence_only_auc, 2), tag: "shortcut", warn: true, text: "AUC from the background silence of each Italian file, with no voice at all. The near-perfect voice score there is a recording artefact." },
+  ];
+  $("findings").innerHTML = findings.map((f) => `<div class="finding ${f.warn ? "warn" : ""}"><div class="tag">${f.tag}</div><div class="num">${f.num}</div><p>${f.text}</p></div>`).join("");
+
+  // ---------------- canvas helpers ----------------
+  function setupCanvas(cv) {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight || Number(cv.getAttribute("height"));
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w, h };
+  }
+
+  // ---------------- voice ----------------
+  const BM = [
+    { f: "jitter_local", name: "Jitter (local)", unit: "%", k: 100, d: 2, log: true },
+    { f: "jitter_rap", name: "Jitter (RAP)", unit: "%", k: 100, d: 2, log: true },
+    { f: "jitter_ppq5", name: "Jitter (PPQ5)", unit: "%", k: 100, d: 2, log: true },
+    { f: "period_cv", name: "Period variability", unit: "%", k: 100, d: 2, log: true },
+    { f: "shimmer_local", name: "Shimmer (local)", unit: "%", k: 100, d: 1, log: true },
+    { f: "shimmer_db", name: "Shimmer", unit: "dB", k: 1, d: 2, log: false },
+    { f: "shimmer_apq3", name: "Shimmer (APQ3)", unit: "%", k: 100, d: 1, log: true },
+    { f: "shimmer_apq5", name: "Shimmer (APQ5)", unit: "%", k: 100, d: 1, log: true },
+    { f: "shimmer_apq11", name: "Shimmer (APQ11)", unit: "%", k: 100, d: 1, log: true },
+    { f: "hnr_db", name: "Harmonics-to-noise", unit: "dB", k: 1, d: 1, log: false },
+  ];
+
+  function strip(bm, value) {
+    const ref = MODEL.reference[bm.f], c = ref.control, p = ref.parkinsons;
+    const vals = [c["10"], c["90"], p["10"], p["90"]]; if (Number.isFinite(value)) vals.push(value);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const T = (v) => bm.log ? Math.log(Math.max(v, 1e-6)) : v;
+    let a = T(lo), b = T(hi); const pad = (b - a) * 0.08 || 1; a -= pad; b += pad;
+    const X = (v) => (100 * (T(v) - a) / (b - a)).toFixed(2);
+    const band = (q, color, y) => `<rect x="${X(q["25"])}%" y="${y}" width="${Math.max(0.5, X(q["75"]) - X(q["25"]))}%" height="7" rx="3" fill="${color}" opacity="0.75"></rect>
+      <rect x="${X(q["50"])}%" y="${y - 1}" width="2" height="9" fill="${color}"></rect>`;
+    const you = Number.isFinite(value) ? `<rect x="${X(value)}%" y="1" width="3" height="24" rx="1.5" fill="var(--ink)" transform="translate(-1.5,0)"></rect>` : "";
+    return `<svg width="100%" height="26" role="img" aria-label="${bm.name}: your value against the control and Parkinson's ranges">
+      <line x1="0" x2="100%" y1="13" y2="13" stroke="var(--grid)"></line>${band(c, "var(--control)", 4)}${band(p, "var(--pd)", 15)}${you}</svg>`;
+  }
+
+  function renderVoice(feats, debug, sourceLabel) {
+    const out = VOICE.predict(MODEL, feats);
+    $("voiceSource").textContent = sourceLabel;
+    $("scoreNum").textContent = fmt(out.prob, 2);
+    $("scoreMark").style.left = (100 * out.prob).toFixed(1) + "%";
+    const near = Math.abs(out.prob - 0.5) < 0.1;
+    $("scoreText").textContent = near ? "Between the two groups: this voice doesn't lean either way." :
+      out.prob > 0.5 ? "These measures sit closer to the Parkinson's group of the training clinic." : "These measures sit closer to the control group of the training clinic.";
+    $("biomarkers").innerHTML = BM.map((bm) => {
+      const v = feats[bm.f], shown = Number.isFinite(v) ? (v * bm.k).toFixed(bm.d) + " " + bm.unit : "–";
+      return `<div class="bm"><div class="name">${bm.name}</div><div class="val">${shown}</div><div>${strip(bm, v)}</div></div>`;
+    }).join("");
+    const top = Object.entries(out.contributions).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 2)
+      .map(([f, c]) => `${BM.find((b) => b.f === f).name.toLowerCase()} (${c > 0 ? "toward Parkinson's" : "toward control"})`);
+    $("voiceNote").textContent = `Biggest influences on this score: ${top.join(" and ")}. Reference ranges are per person from the training clinic (${R.sakar_n} people). Cycles found: ${debug.times.length}.`;
+    drawWave(debug);
+  }
+
+  function drawWave(debug) {
+    const cv = $("waveCanvas"); const { ctx, w, h } = setupCanvas(cv);
+    ctx.clearRect(0, 0, w, h);
+    const x = debug.region; if (!x || !x.length) return;
+    const SRv = VOICE.SR, span = Math.round(0.06 * SRv), start = Math.max(0, Math.floor(x.length / 2 - span / 2));
+    let peak = 1e-9; for (let i = start; i < start + span && i < x.length; i++) peak = Math.max(peak, Math.abs(x[i]));
+    ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+    ctx.strokeStyle = css("--accent"); ctx.globalAlpha = 0.85;
+    for (const t of debug.times) {
+      const s = t * SRv; if (s < start || s > start + span) continue;
+      const px = ((s - start) / span) * w; ctx.beginPath(); ctx.moveTo(px, 6); ctx.lineTo(px, 16); ctx.stroke();
+    }
+    ctx.globalAlpha = 1; ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.3; ctx.beginPath();
+    for (let i = 0; i < span && start + i < x.length; i++) {
+      const px = (i / span) * w, py = h / 2 - (x[start + i] / peak) * (h / 2 - 22);
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--font-mono");
+    ctx.fillText("60 ms · ticks = vocal-fold cycles", 8, h - 7);
+  }
+
+  function setVoiceBusy(b, msg, isErr) {
+    for (const id of ["recBtn", "synSteady", "synRough"]) $(id).disabled = b;
+    $("voiceStatus").textContent = msg || ""; $("voiceStatus").classList.toggle("err", !!isErr);
+  }
+
+  function analyseSamples(x16, label) {
+    const { feats, debug } = VOICE.extract(x16);
+    if (!Number.isFinite(feats.jitter_local)) {
+      setVoiceBusy(false, "Couldn't find a steady voiced sound. Hold one vowel for 4 to 5 seconds, close to the microphone, in a quiet room.", true);
+      return;
+    }
+    renderVoice(feats, debug, label);
+    setVoiceBusy(false, "");
+  }
+
+  async function to16k(buffer) {
+    const len = Math.ceil(buffer.duration * VOICE.SR);
+    const off = new OfflineAudioContext(1, len, VOICE.SR);
+    const src = off.createBufferSource(); src.buffer = buffer; src.connect(off.destination); src.start();
+    const out = await off.startRendering(); return out.getChannelData(0);
+  }
+
+  $("voiceFile").addEventListener("change", async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    setVoiceBusy(true, "Analysing " + file.name + "…");
+    try {
+      const buf = await file.arrayBuffer();
+      const decoded = await new OfflineAudioContext(1, 1, VOICE.SR).decodeAudioData(buf);
+      let x = decoded.getChannelData(0);
+      if (decoded.numberOfChannels > 1) { const y = decoded.getChannelData(1); x = x.map((v, i) => 0.5 * (v + y[i])); }
+      if (decoded.sampleRate !== VOICE.SR) x = await to16k(decoded);
+      setTimeout(() => analyseSamples(x, file.name), 20);
+    } catch (err) {
+      setVoiceBusy(false, "Couldn't read that file. Try a WAV, M4A or MP3 recording.", true);
+    }
+    e.target.value = "";
+  });
+
+  $("recBtn").addEventListener("click", async () => {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    } catch (err) {
+      setVoiceBusy(false, "The microphone is blocked here. Upload a recording instead (a phone voice memo works), or open demo.html from the repo in your own browser to record live.", true);
+      return;
+    }
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ac.createMediaStreamSource(stream), proc = ac.createScriptProcessor(4096, 1, 1), chunks = [];
+    proc.onaudioprocess = (ev) => chunks.push(new Float32Array(ev.inputBuffer.getChannelData(0)));
+    src.connect(proc); proc.connect(ac.destination);
+    let left = 5; setVoiceBusy(true, `Recording… hold "aaah" for ${left} s`);
+    const timer = setInterval(() => { left -= 1; if (left > 0) $("voiceStatus").textContent = `Recording… hold "aaah" for ${left} s`; }, 1000);
+    await new Promise((r) => setTimeout(r, 5200));
+    clearInterval(timer); proc.disconnect(); src.disconnect(); stream.getTracks().forEach((t) => t.stop());
+    const n = chunks.reduce((a, c) => a + c.length, 0), all = new Float32Array(n); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+    const buf = ac.createBuffer(1, n, ac.sampleRate); buf.copyToChannel(all, 0); ac.close();
+    $("voiceStatus").textContent = "Analysing…";
+    const x16 = await to16k(buf);
+    setTimeout(() => analyseSamples(x16, "your recording"), 20);
+  });
+
+  $("synSteady").addEventListener("click", () => { setVoiceBusy(true, "Synthesising…"); setTimeout(() => analyseSamples(VOICE.simulate({ jitter: 0.003, shimmer: 0.025, noiseDb: -35, seed: 11 }), "synthetic steady voice"), 20); });
+  $("synRough").addEventListener("click", () => { setVoiceBusy(true, "Synthesising…"); setTimeout(() => analyseSamples(VOICE.simulate({ jitter: 0.015, shimmer: 0.09, noiseDb: -18, seed: 12 }), "synthetic rough voice"), 20); });
+
+  // ---------------- spiral ----------------
+  const sc = $("spiralCanvas");
+  let strokes = [], drawing = false, current = null, lastResult = null, lastPoints = null;
+
+  function drawSpiral() {
+    const { ctx, w, h } = setupCanvas(sc);
+    ctx.clearRect(0, 0, w, h);
+    const step = w / 16; ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1;
+    for (let i = 1; i < 16; i++) { ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, h); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(w, i * step); ctx.stroke(); }
+    const scale = w / (sc._logical || w);
+    if (lastResult && lastResult.fit && lastPoints === strokes) {
+      const f = lastResult.fit; ctx.setLineDash([5, 5]); ctx.strokeStyle = css("--accent"); ctx.globalAlpha = 0.6; ctx.lineWidth = 1.4; ctx.beginPath();
+      const t0 = Math.min(f.th[0], f.th[f.th.length - 1]), t1 = Math.max(f.th[0], f.th[f.th.length - 1]);
+      for (let k = 0; k <= 400; k++) { const th = t0 + (t1 - t0) * k / 400, r = f.a + f.b * th; const px = (f.cx + r * Math.cos(th)) * scale, py = (f.cy + r * Math.sin(th)) * scale; k ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      const P = lastResult.points, res = f.res, Rr = lastResult.R, cC = css("--control"), cP = css("--pd");
+      ctx.lineWidth = 2.4; ctx.lineCap = "round";
+      for (let i = 1; i < P.length; i++) {
+        if (P[i].t - P[i - 1].t > 30) continue;
+        const e = Math.min(1, Math.abs(res[i]) / (0.04 * Rr));
+        ctx.strokeStyle = e > 0.5 ? cP : cC; ctx.globalAlpha = 0.45 + 0.55 * e;
+        ctx.beginPath(); ctx.moveTo(P[i - 1].x * scale, P[i - 1].y * scale); ctx.lineTo(P[i].x * scale, P[i].y * scale); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      for (const s of strokes) { ctx.beginPath(); s.forEach((p, i) => i ? ctx.lineTo(p.x * scale, p.y * scale) : ctx.moveTo(p.x * scale, p.y * scale)); ctx.stroke(); }
+    }
+  }
+
+  function renderSpiral(result, label) {
+    $("spiralSource").textContent = label;
+    if (result.error) { $("spiralStatus").textContent = result.error; $("spiralStatus").classList.add("err"); return; }
+    $("spiralStatus").textContent = ""; $("spiralStatus").classList.remove("err");
+    const m = result.metrics;
+    const tiles = [
+      [fmt(100 * m.tremor_band_share, 0) + "%", "of the wobble sits in the 4–12 Hz tremor band"],
+      [m.tremor_band_share > 0.5 ? fmt(m.tremor_peak_hz, 1) + " Hz" : "none", "dominant tremor frequency"],
+      [fmt(m.radial_irregularity_pct, 2) + "%", "average drift from the ideal spiral, as a share of its radius"],
+      [fmt(m.speed_cv, 2), "speed variability (lower is steadier)"],
+      [fmt(m.duration_s, 1) + " s", `drawing time · ${fmt(m.turns, 1)} turns`],
+      [String(m.pen_lifts), "pen lifts"],
+    ];
+    $("spiralTiles").innerHTML = tiles.map(([v, k]) => `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+    $("spiralNote").textContent = `These are measurements, not a diagnosis. On tablet recordings of ${R.spiral.n_people} people, a spiral-kinematics model reached AUC ${fmt(R.spiral.static_spiral_only.auc, 2)} (static spiral) on held-out people, but its features depend on the tablet, so this browser test reports the measures only.`;
+    lastResult = result; lastPoints = strokes; drawSpiral(); drawSpectrum(result);
+    $("spiralHint").textContent = "Dashed line: best-fit spiral. Red segments drift furthest from it.";
+  }
+
+  function drawSpectrum(result) {
+    const cv = $("specCanvas"); const { ctx, w, h } = setupCanvas(cv); ctx.clearRect(0, 0, w, h);
+    const { freqs, power } = result.spectrum, padL = 8, padB = 20, fMax = 20;
+    const X = (f) => padL + (f / fMax) * (w - 2 * padL), pm = Math.max(...power.filter((_, i) => freqs[i] >= 1)) || 1;
+    ctx.fillStyle = css("--accent"); ctx.globalAlpha = 0.09; ctx.fillRect(X(4), 4, X(12) - X(4), h - padB - 4); ctx.globalAlpha = 1;
+    ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(padL, h - padB); ctx.lineTo(w - padL, h - padB); ctx.stroke();
+    ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--font-mono");
+    for (const f of [0, 4, 8, 12, 16, 20]) { ctx.fillText(String(f), X(f) - 4, h - 6); }
+    ctx.fillText("Hz", w - padL - 16, h - padB - 6);
+    ctx.fillText("tremor band", X(4) + 4, 14);
+    ctx.beginPath(); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5;
+    freqs.forEach((f, i) => { const y = h - padB - (power[i] / pm) * (h - padB - 22); i ? ctx.lineTo(X(f), y) : ctx.moveTo(X(f), y); });
+    ctx.stroke();
+  }
+
+  function toLogical(e) { const r = sc.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  sc.addEventListener("pointerdown", (e) => {
+    if (lastResult && lastPoints === strokes) { strokes = []; lastResult = null; }
+    sc._logical = sc.clientWidth; drawing = true; sc.setPointerCapture(e.pointerId);
+    const p = toLogical(e); current = [{ x: p.x, y: p.y, t: e.timeStamp, p: e.pressure || 0.5 }]; strokes.push(current);
+    $("spiralSource").textContent = "your drawing"; $("spiralHint").textContent = "Lift to finish. Analysis runs when you stop for a moment.";
+    clearTimeout(sc._t);
+  });
+  sc.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of evs) { const p = toLogical(ev); current.push({ x: p.x, y: p.y, t: ev.timeStamp, p: ev.pressure || 0.5 }); }
+    drawSpiral();
+  });
+  const endStroke = () => {
+    if (!drawing) return; drawing = false;
+    clearTimeout(sc._t); sc._t = setTimeout(() => renderSpiral(SPIRAL.analyse(strokes), "your drawing"), 900);
+  };
+  sc.addEventListener("pointerup", endStroke); sc.addEventListener("pointercancel", endStroke);
+
+  function showSimulated(opts, label) {
+    const w = sc.clientWidth; sc._logical = w;
+    const sim = SPIRAL.simulate(opts);
+    strokes = sim.map((s) => s.map((p) => ({ ...p, x: (p.x / 400) * w, y: (p.y / 400) * w })));
+    renderSpiral(SPIRAL.analyse(strokes), label);
+  }
+  $("clearSpiral").addEventListener("click", () => { strokes = []; lastResult = null; drawSpiral(); $("spiralTiles").innerHTML = ""; $("spiralNote").textContent = ""; $("spiralSource").textContent = "your drawing"; $("spiralHint").textContent = "Draw here: start at the centre, go outward."; const { ctx, w, h } = setupCanvas($("specCanvas")); ctx.clearRect(0, 0, w, h); sc.focus(); });
+  $("synSpiralSteady").addEventListener("click", () => showSimulated({}, "synthetic steady hand"));
+  $("synSpiralTremor").addEventListener("click", () => showSimulated({ tremorHz: 5, tremorAmp: 0.02 }, "synthetic 5 Hz tremor"));
+  window.addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(() => { if (lastResult && lastPoints === strokes) showSimulatedRescale(); else drawSpiral(); }, 150); });
+  function showSimulatedRescale() { drawSpiral(); }
+
+  // ---------------- evidence charts ----------------
+  function bars(rows, opts = {}) {
+    const W = 520, rowH = 34, top = 6, left = opts.left || 190, right = 46, H = top + rows.length * rowH + 26;
+    const X = (v) => left + v * (W - left - right);
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${opts.aria || "bar chart"}" style="max-width:${W}px;font-family:var(--font-body)">`;
+    for (const v of [0, 0.5, 1]) s += `<line x1="${X(v)}" x2="${X(v)}" y1="${top}" y2="${H - 22}" stroke="var(--grid)" ${v === 0.5 ? 'stroke-dasharray="4 3"' : ""}></line><text x="${X(v)}" y="${H - 6}" font-size="11" fill="var(--muted)" text-anchor="middle" font-family="var(--font-mono)">${v.toFixed(1)}</text>`;
+    s += `<text x="${X(0.5) + 4}" y="${H - 22 - 4}" font-size="10" fill="var(--muted)">chance</text>`;
+    rows.forEach((r, i) => {
+      const y = top + i * rowH;
+      s += `<text x="${left - 10}" y="${y + 20}" font-size="12.5" fill="var(--ink)" text-anchor="end">${r.label}</text>`;
+      s += `<rect x="${X(0)}" y="${y + 8}" width="${X(r.value) - X(0)}" height="16" rx="3" fill="${r.color}"></rect>`;
+      s += `<text x="${X(r.value) + 6}" y="${y + 21}" font-size="12.5" fill="var(--ink)" font-family="var(--font-mono)">${r.value.toFixed(3)}</text>`;
+    });
+    return s + "</svg>";
+  }
+  $("leakText").textContent = `Sakar 2018, ${R.sakar_n} people with 3 recordings each, all 752 published features, gradient-boosted trees. Leaky: random 5-fold over recordings. Held out: each person's recordings stay together.`;
+  $("leakChart").innerHTML = bars([
+    { label: "Leaky split, per recording", value: R.leak.leaky_rec, color: "var(--pd)" },
+    { label: "Held out, per recording", value: R.leak.grouped_rec, color: "var(--accent)" },
+    { label: "Leaky split, per person", value: R.leak.leaky_subj, color: "var(--pd)" },
+    { label: "Held out, per person", value: R.leak.grouped_subj, color: "var(--accent)" },
+  ], { aria: "AUC with and without person-level leakage" });
+
+  const dir = R.shortcut.biomarker_directions;
+  $("shortcutText").textContent = `28 Parkinson's vs 22 age-matched controls. The typical Parkinson's file has a background noise floor about ${fmt(R.shortcut.noise_floor_db_median.pd - R.shortcut.noise_floor_db_median.control, 0)} dB louder than a control file, and jitter, shimmer and HNR all point the wrong way (jitter is ${fmt(100 * dir.jitter_local.pd_median, 2)}% in Parkinson's vs ${fmt(100 * dir.jitter_local.control_median, 2)}% in controls). The model was hearing the recording setup.`;
+  $("shortcutChart").innerHTML = bars([
+    { label: "Voice model, in-dataset", value: R.shortcut.in_dataset_auc, color: "var(--pd)" },
+    { label: "Background silence only", value: R.shortcut.silence_only_auc, color: "var(--pd)" },
+    { label: "Clinic-trained model", value: R.shortcut.physiology_model_transfer_auc, color: "var(--accent)" },
+  ], { aria: "AUC of three models on the Italian dataset" });
+
+  const ex = R.external;
+  const pill = (auc) => auc >= 0.85 ? `<span class="pill ok">strong ranking</span>` : auc >= 0.7 ? `<span class="pill mid">moderate</span>` : `<span class="pill bad">fails</span>`;
+  const extRows = [
+    ["Sakar 2018 (Turkey), held out by person", `${R.sakar_n} (${R.sakar_pd} PD)`, R.portable.subj_auc, R.portable.subj_sens, R.portable.subj_spec, "Same clinic as training. 5-fold × 10 repeats."],
+    ["Oxford (US), never seen", `${ex.oxford.n_subjects} (${ex.oxford.n_pd} PD)`, ex.oxford.auc, ex.oxford.sens, ex.oxford.spec, "MDVP software instead of Praat; no period-variability measure."],
+    ["Italian (Bari), never seen", `${ex.italian.n_subjects} (${ex.italian.n_pd} PD)`, ex.italian.auc, ex.italian.sens, ex.italian.spec, "Run through the browser extractor on raw audio. Recording setup differs by group."],
+  ];
+  $("extTable").innerHTML = `<thead><tr><th>Test set</th><th>People</th><th>AUC</th><th>Sensitivity</th><th>Specificity</th><th></th><th>Notes</th></tr></thead><tbody>` +
+    extRows.map((r) => `<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${fmt(r[2], 3)}</td><td class="n">${fmt(r[3], 2)}</td><td class="n">${fmt(r[4], 2)}</td><td>${pill(r[2])}</td><td class="small muted">${r[5]}</td></tr>`).join("") + "</tbody>";
+  $("extText").textContent = "Sensitivity and specificity use the 0.5 threshold set in the training clinic. On Oxford the model ranks people well (AUC above 0.9) but flags too few of them at that threshold, so each new site needs its own threshold. On the Italian set it fails because that dataset's groups were recorded differently.";
+
+  // ---------------- initial state: examples already analysed ----------------
+  function init() {
+    analyseSamples(VOICE.simulate({ jitter: 0.003, shimmer: 0.025, noiseDb: -35, seed: 11 }), "synthetic steady voice");
+    showSimulated({ tremorHz: 5, tremorAmp: 0.02 }, "synthetic 5 Hz tremor");
+  }
+  const VOICE = window.NeuroVoice, SPIRAL = window.NeuroSpiral;
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(init); else init();
+})();
+</script>
+</body>
+</html>
