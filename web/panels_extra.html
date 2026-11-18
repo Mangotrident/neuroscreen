@@ -1,0 +1,65 @@
+      <!-- TAP -->
+      <div class="panel" id="tapPanel">
+        <div class="panel-head">
+          <h3>3 · Hand: tap test</h3>
+          <span class="source-chip" id="tapSource">synthetic example</span>
+        </div>
+        <p class="small muted">Using one index finger, tap the two circles in turn as fast and evenly as you can for 15 seconds. Do the right hand, then the left.</p>
+        <canvas id="tapCanvas" aria-label="Tap test area with two circles"></canvas>
+        <div class="controls">
+          <button class="primary" id="tapRight" type="button">Start right hand</button>
+          <button id="tapLeft" type="button">Start left hand</button>
+          <button id="tapSyn" type="button">Synthetic example</button>
+        </div>
+        <div class="status" id="tapStatus" role="status"></div>
+        <div class="tiles" id="tapTiles"></div>
+        <canvas class="plot" id="tapPlot" height="110" aria-label="Time between taps across the trial, per hand"></canvas>
+        <p class="note">Speed, rhythm and slowing over the trial follow the finger-tapping item of the clinical Parkinson's rating scale (MDS-UPDRS 3.4). A gap between hands is the most useful single sign, because most causes affect one side first.</p>
+      </div>
+
+      <!-- FACE -->
+      <div class="panel" id="facePanel">
+        <div class="panel-head">
+          <h3>4 · Face: smile check</h3>
+          <span class="source-chip" id="faceSource">synthetic example</span>
+        </div>
+        <p class="small muted">Look at the camera with a relaxed face for 2 seconds, then give a big smile, relax, and smile again. About 10 seconds.</p>
+        <video id="faceVideo" class="cam" playsinline muted hidden></video>
+        <div class="controls">
+          <button class="primary" id="faceCam" type="button">Record 10 seconds</button>
+          <label class="filebtn" for="faceFile">Upload a video<input type="file" id="faceFile" accept="video/*"></label>
+          <button id="faceSynA" type="button">Synthetic: typical</button>
+          <button id="faceSynB" type="button">Synthetic: reduced expression</button>
+        </div>
+        <div class="status" id="faceStatus" role="status"></div>
+        <div class="tiles" id="faceTiles"></div>
+        <canvas class="plot" id="facePlot" height="110" aria-label="Smile size over the clip, with blinks marked"></canvas>
+        <p class="note" id="faceNote">Face tracking uses Google's MediaPipe Face Mesh (468 points), running on this device. These are measurements against the person's own baseline. There is no disease model, because no openly licensed labelled dataset exists to train or test one.</p>
+      </div>
+
+      <!-- WALK -->
+      <div class="panel wide" id="gaitPanel">
+        <div class="panel-head">
+          <h3>5 · Walking past Piko</h3>
+          <span class="source-chip" id="gaitSource">synthetic example</span>
+        </div>
+        <div class="split">
+          <div class="stack">
+            <p class="small muted">Walk across the camera's view, side-on, at your usual pace, for 3 to 5 metres, with your whole body in the frame. Height is needed once, to convert pixels to metres.</p>
+            <label class="field" for="gaitHeight">Height (cm) <input type="number" id="gaitHeight" value="165" min="120" max="210" step="1"></label>
+            <video id="gaitVideo" class="cam" playsinline muted hidden></video>
+            <div class="controls">
+              <button class="primary" id="gaitCam" type="button">Record 8 seconds</button>
+              <label class="filebtn" for="gaitFile">Upload a video<input type="file" id="gaitFile" accept="video/*"></label>
+              <button id="gaitSynA" type="button">Synthetic: typical</button>
+              <button id="gaitSynB" type="button">Synthetic: slower, uneven arms</button>
+            </div>
+            <div class="status" id="gaitStatus" role="status"></div>
+            <canvas class="plot" id="gaitPlot" height="120" aria-label="Distance between the ankles over time, with detected steps marked"></canvas>
+          </div>
+          <div class="stack">
+            <div class="tiles" id="gaitTiles"></div>
+            <p class="note">Body tracking uses Google's MediaPipe Pose (33 points). Leg length (about 0.49 of height) sets the scale. Walking speed is the strongest single number here: clinicians treat under 1.0 m/s in older adults as a yellow flag for falls and frailty. Reduced or uneven arm swing is one of the earliest visible signs of Parkinson's.</p>
+          </div>
+        </div>
+      </div>

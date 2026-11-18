@@ -1,0 +1,25 @@
+  <section id="weekly">
+    <div class="section-head">
+      <div class="label">Weekly view for family</div>
+      <h2>Compared with their own normal, not with strangers</h2>
+      <p class="muted">Piko learns each person's usual results over their first two weeks. It only speaks up when several sessions in a row drift the same way, or when something one-sided changes suddenly. These are simulated people, so you can see how it behaves.</p>
+    </div>
+    <div class="controls" role="group" aria-label="Choose a simulated person">
+      <button id="scStable" type="button">Stable</button>
+      <button id="scMotor" type="button">Slow drift across several tests</button>
+      <button id="scMobility" type="button">Walking decline only</button>
+      <button id="scAcute" type="button">Sudden one-sided change</button>
+    </div>
+    <div class="weekly-grid">
+      <div class="ev">
+        <h3 id="wkTitle">What Piko would tell the family</h3>
+        <div id="wkPrompts" class="prompts"></div>
+        <p class="small muted" id="wkStats"></p>
+      </div>
+      <div class="ev">
+        <h3>Daily results against this person's baseline</h3>
+        <div class="legend"><span><i style="background: color-mix(in srgb, var(--control) 35%, transparent)"></i>usual range (baseline ± 2 spread)</span><span><i style="background: var(--pd)"></i>sessions in the "worse" direction</span><span><i style="background: var(--muted); width: 2px;"></i>baseline ends</span></div>
+        <div id="wkCharts" class="minis"></div>
+      </div>
+    </div>
+  </section>
