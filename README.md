@@ -1,10 +1,36 @@
 # NeuroScreen
 
-**Can a sustained "aaah" and a hand-drawn spiral reveal Parkinson's disease, and how much of the accuracy reported for this survives honest testing?**
+**Five everyday health checks a home robot can run (voice, smile, walking, tapping and spiral drawing), each compared with the person's own normal, with every accuracy claim tested on people the models have never seen.**
 
-NeuroScreen is a voice and spiral-drawing screening demo that runs entirely in the browser, plus an evaluation that keeps every person out of their own test set. It is a research demo, not a medical device.
+NeuroScreen runs entirely on-device, in a browser or a robot's web view. It is a research demo, not a medical device.
 
-## Results
+## The five checks
+
+| Check | Input | Perception | What it measures | Validated how |
+|---|---|---|---|---|
+| Voice | 5 s "aaah" (mic) | Own extractor, JS port of the Python one | Jitter, shimmer, period variability, HNR, CPP, pitch and loudness tremor, plus a model score | Model trained on 252 people; AUC 0.76 on held-out people, 0.91 on an external US cohort (below) |
+| Spiral | Finger or stylus (screen) | Pen path | Tremor-band share and frequency, drift from the ideal spiral, speed variability | Recovers injected 5 Hz and 9 Hz tremor exactly |
+| Tap test | Two-target tapping, 15 s per hand (screen) | Touch events | Taps per second, rhythm variability, slowing over the trial, misses, left-right gap | Recovers injected rate, rhythm and slowing |
+| Smile | 10 s video (camera) | Google MediaPipe Face Mesh, 468 points | Smile size, time to full smile, left-right asymmetry, cheek raise, blink rate, resting facial motion | Recovers injected asymmetry (40.4% vs 40%), cheek raise and blink rate in synthetic faces |
+| Walking | Walk 3–5 m across the camera's view | Google MediaPipe Pose, 33 points, scaled by height | Walking speed (m/s), cadence, step length, stride variability, arm swing per side and asymmetry, forward lean | Recovers injected speed (1.19 vs 1.20 m/s), cadence, step length, arm asymmetry and lean |
+
+Smile, walking and tap measures have **no disease model**. I searched for openly licensed, reproducible labelled data and found none: the one hypomimia repo ships only PCA-compressed features, and mPower tapping data sits behind a data-use agreement. These checks report measurements and changes from the person's own baseline. All 20 synthetic-recovery checks pass (`node tests/metrics_synthetic.js`). End to end, the MediaPipe models were run in headless Chrome on real video, through the page's own upload path.
+
+### Weekly change engine (`web/baseline.js`)
+
+Each person's first two weeks (6 to 14 sessions) set their baseline (median and spread). A **sustained change** needs the median of the last 5 sessions to sit far outside that baseline, judged against its standard error, with 4 of those 5 sessions agreeing, on two consecutive days. A **sudden one-sided change** (smile asymmetry, left-right tapping gap) triggers an immediate safety prompt. Changes are grouped by domain (voice, face, walking, hands) into plain-language prompts that suggest what to ask or whom to see. They never name a disease.
+
+| Simulation (200 people each, `node tests/baseline_sim.js`) | Result |
+|---|---|
+| Stable people who got any prompt in 8 weeks | 2% |
+| Stable people who got a "discuss with a doctor" prompt | 0% |
+| Slow drift across several tests caught | 100%, median 16 days after it began |
+| Walking-only decline caught | 98%, median 13 days |
+| Sudden one-sided change caught the same day | 100% |
+
+The simulated day-to-day variability is an assumption. A pilot has to measure the real variability before these rates mean anything.
+
+## Voice results
 
 All numbers are subject-independent: every recording from one person sits on the same side of every split.
 
@@ -45,17 +71,22 @@ Confound checks: sex alone gives 0.61 AUC on both datasets. Removing the 10 Ital
 ```bash
 pip install -r requirements.txt
 bash scripts/get_data.sh                 # ~1.5 GB, all datasets CC BY 4.0
+bash scripts/get_vendor.sh               # MediaPipe face + pose models for offline use (optional)
 python scripts/build_voice_table.py      # features for 495 Italian vowel recordings (+ Praat reference)
 python scripts/evaluate_voice.py         # Italian within-dataset evaluation, permutation test
 python scripts/evaluate_sakar.py         # Sakar benchmark, leakage comparison, external validation
 python scripts/shortcut_check.py         # silence-only model, biomarker directions
 python scripts/evaluate_spiral.py        # spiral baseline
 python scripts/export_model.py           # browser model -> web/voice_model.json
-python tests/make_fixtures.py && node tests/parity.js
-python scripts/build_page.py             # -> dist/index.html and dist/demo.html
+python tests/make_fixtures.py && node tests/parity.js     # browser voice code == Python
+node tests/metrics_synthetic.js          # face, walking, tap and spiral measures recover injected values
+node tests/baseline_sim.js               # false-alarm and detection rates of the weekly engine
+python scripts/build_page.py             # -> dist/demo.html and dist/artifact/
 ```
 
-To record from your microphone, serve the folder locally (`python -m http.server` in `dist/`) and open `http://localhost:8000/demo.html`. Hosted artifact viewers block microphone access, so there the page offers file upload instead. A phone voice memo works, but uncompressed WAV is best.
+**To try it live** with microphone and camera, serve `dist/` locally (`python -m http.server` inside `dist/`) and open `http://localhost:8000/demo.html`. It loads the MediaPipe models from jsDelivr. `dist/artifact/` is the same page with the models bundled, for offline use on the robot (run `get_vendor.sh` first). Hosted viewers block the camera and microphone, so there the page accepts uploaded audio and video instead.
+
+**On Piko:** each check is a pure function from a landmark, touch or audio stream to a dictionary of measures (`web/face.js`, `gait.js`, `tap.js`, `spiral.js`, `voice.js`). The robot calls them on its own camera, microphone and screen events, stores one session per day, and passes the history to `NeuroBaseline.evaluate()` for the family summary.
 
 ## Limits
 
@@ -63,12 +94,15 @@ To record from your microphone, serve the folder locally (`python -m http.server
 - The 0.5 threshold does not transfer between sites. Recalibrate before any screening use.
 - Synthetic voices in the demo show the pipeline working. On them the extractor reads roughly half the injected jitter (Praat reads about 80%), while on real recordings it tracks Praat closely.
 - No Alzheimer's or stroke/dysarthria module. DementiaBank (Pitt, ADReSS) and TORGO need access agreements. DementiaBank is free for researchers with a faculty sponsor.
+- Face, walking and tap measures have not been validated against disease labels, and nobody has measured their day-to-day reliability on robot hardware yet. That pilot is the next step.
+- Walking assumes a side-on path roughly parallel to the camera. Walking towards the camera is rejected by the quality check rather than measured badly.
 
 ## Next steps
 
-1. Get DementiaBank access and add the linguistic module (Whisper timestamps → pause and lexical features), evaluated leave-one-subject-out.
-2. Find raw digitized-tablet spiral data (x, y, t, pressure) so the browser spiral features can be validated directly.
-3. Calibrate per site, using a few labelled people at each new site to set the threshold.
+1. Run a 2-week pilot on robot hardware: measure each check's day-to-day variability per person, then set the weekly engine's thresholds from real data.
+2. Get DementiaBank access and add the linguistic module (Whisper timestamps → pause and lexical features), evaluated leave-one-subject-out.
+3. Find raw digitized-tablet spiral data (x, y, t, pressure) so the browser spiral features can be validated directly.
+4. Calibrate per site, using a few labelled people at each new site to set the threshold.
 
 ## Data and licences
 
@@ -76,3 +110,4 @@ To record from your microphone, serve the folder locally (`python -m http.server
 - Little, M.A. et al. (2007). *Exploiting nonlinear recurrence and fractal scaling properties for voice disorder detection.* UCI ML Repository, CC BY 4.0.
 - Dimauro, G. & Girardi, F. (2019). *Italian Parkinson's Voice and Speech.* IEEE DataPort, doi:10.21227/aw6b-tg17, CC BY 4.0.
 - Isenkul, M.E. et al. (2014). *Improved spiral test using digitized graphics tablet for monitoring Parkinson's disease.* UCI ML Repository, CC BY 4.0.
+- Google MediaPipe Face Mesh 0.4 and Pose 0.5 web packages (Apache-2.0), used unmodified for face and body landmarks.
