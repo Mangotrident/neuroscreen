@@ -1,0 +1,110 @@
+{
+ "face": {
+  "asymmetry_pct (inject 40%)": {
+   "injected": 40,
+   "measured": 40.3534,
+   "ok": true
+  },
+  "cheek_raise_pct (inject 25%)": {
+   "injected": 25,
+   "measured": 24.926,
+   "ok": true
+  },
+  "blink_rate_per_min (inject 6)": {
+   "injected": 6,
+   "measured": 6.0201,
+   "ok": true
+  },
+  "smile size ratio weak/normal (inject 0.42)": {
+   "injected": 0.4166666666666667,
+   "measured": 0.418,
+   "ok": true
+  },
+  "onset slower when injected slower (1 = yes)": {
+   "injected": 1,
+   "measured": 1,
+   "ok": true
+  }
+ },
+ "gait": {
+  "speed_m_s (inject 1.2)": {
+   "injected": 1.2,
+   "measured": 1.1931,
+   "ok": true
+  },
+  "speed_m_s (inject 0.8)": {
+   "injected": 0.8,
+   "measured": 0.796,
+   "ok": true
+  },
+  "speed_m_s, 155 cm person (inject 1.2)": {
+   "injected": 1.2,
+   "measured": 1.1917,
+   "ok": true
+  },
+  "cadence (inject 110)": {
+   "injected": 110,
+   "measured": 110.7876,
+   "ok": true
+  },
+  "step_length_m (inject 0.655)": {
+   "injected": 0.6545454545454545,
+   "measured": 0.6461,
+   "ok": true
+  },
+  "arm_swing_asym_pct (inject 60%)": {
+   "injected": 60,
+   "measured": 60.04,
+   "ok": true
+  },
+  "trunk_lean_deg (inject 15)": {
+   "injected": 15,
+   "measured": 14.9953,
+   "ok": true
+  },
+  "stride variability rises with injected variability (1 = yes)": {
+   "injected": 1,
+   "measured": 1,
+   "ok": true
+  }
+ },
+ "tap": {
+  "rate_hz (inject 5)": {
+   "injected": 5,
+   "measured": 4.8667,
+   "ok": true
+  },
+  "rate_hz (inject 3)": {
+   "injected": 3,
+   "measured": 2.9333,
+   "ok": true
+  },
+  "rhythm variability higher when injected (1 = yes)": {
+   "injected": 1,
+   "measured": 1,
+   "ok": true
+  },
+  "decrement_pct (inject 40% linear slowing, ~28% expected)": {
+   "injected": 28,
+   "measured": 26.087,
+   "ok": true
+  },
+  "decrement_pct (no slowing)": {
+   "injected": 0,
+   "measured": 0,
+   "ok": true
+  }
+ },
+ "spiral": {
+  "tremor_peak_hz (inject 5)": {
+   "injected": 5,
+   "measured": 5,
+   "ok": true
+  },
+  "tremor_peak_hz (inject 9)": {
+   "injected": 9,
+   "measured": 9,
+   "ok": true
+  }
+ }
+}

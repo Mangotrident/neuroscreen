@@ -1,0 +1,10 @@
+{
+ "note": "Simulated people with assumed day-to-day variability; real variability must be measured in a pilot.",
+ "stable_people_with_any_prompt_in_8_weeks_pct": 2,
+ "stable_people_with_discuss_or_urgent_prompt_pct": 0,
+ "motor_drift_caught_pct": 100,
+ "motor_median_days_after_change_starts": 16,
+ "mobility_drift_caught_pct": 98,
+ "mobility_median_days_after_change_starts": 13,
+ "sudden_one_sided_change_caught_same_day_pct": 100
+}
