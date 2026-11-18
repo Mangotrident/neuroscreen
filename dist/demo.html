@@ -137,26 +137,47 @@ a { color: var(--accent); }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .scale .mark { transition: none; } }
+
+.panel.wide { grid-column: 1 / -1; }
+.split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; }
+.stack { display: grid; gap: 12px; align-content: start; min-width: 0; }
+#tapCanvas { width: 100%; height: 220px; touch-action: none; border-radius: 10px; background: var(--paper); display: block; cursor: pointer; }
+.cam { width: 100%; max-height: 260px; border-radius: 10px; background: #000; object-fit: cover; }
+.field { display: flex; gap: 10px; align-items: center; font-size: 0.88rem; }
+.field input { width: 6rem; font: inherit; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--grid); background: var(--paper); color: var(--ink); }
+.field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tile.warn .v { color: var(--pd); }
+#gaitTiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.weekly-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px; margin-top: 16px; }
+.prompts { display: grid; gap: 10px; }
+.prompt { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 9px; background: var(--paper); }
+.prompt p { margin-top: 3px; }
+.minis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.mini { display: grid; gap: 4px; min-width: 0; }
+.mini-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.84rem; }
+@media (max-width: 900px) { .split, .weekly-grid { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .minis { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><b>NeuroScreen</b> · voice + spiral · research demo</div>
-    <div class="small muted">Not a medical device. Nothing you record leaves this page.</div>
+    <div class="brand"><b>NeuroScreen</b> · voice · face · walking · hands · research demo</div>
+    <div class="small muted">Not a medical device. Nothing you record leaves this device.</div>
   </header>
 
   <div class="hero">
-    <h1>Can a spiral and an <em>"aaah"</em> reveal Parkinson's?</h1>
-    <p class="lede">NeuroScreen measures voice and hand tremor right in your browser. It also shows how its accuracy holds up on people it has never seen, which is where most published voice-AI numbers fall apart.</p>
+    <h1>Five everyday checks, each measured against <em>your own normal</em></h1>
+    <p class="lede">Voice, face, walking and two hand tests, run on-device by a home robot or by this page. Each person is compared with their own first weeks. Every accuracy claim is tested on people the models have never seen, which is where most published health-AI numbers fall apart.</p>
     <div class="findings" id="findings"></div>
   </div>
 
   <section id="demo">
     <div class="section-head">
       <div class="label">Live demo</div>
-      <h2>Try both tests</h2>
-      <p class="muted">Each panel opens with a synthetic example already analysed. Replace it with your own voice or drawing.</p>
+      <h2>Try the checks</h2>
+      <p class="muted">Each panel opens with a synthetic example already analysed. Replace it with your own voice, drawing, taps or video. The camera works on the robot and in a local copy; in a hosted viewer, upload a short video instead.</p>
     </div>
     <div class="panels">
       <!-- VOICE -->
@@ -190,7 +211,7 @@ a { color: var(--accent); }
       <!-- SPIRAL -->
       <div class="panel" id="spiralPanel">
         <div class="panel-head">
-          <h3>2 · Hand</h3>
+          <h3>2 · Hand: spiral</h3>
           <span class="source-chip" id="spiralSource">synthetic example</span>
         </div>
         <p class="small muted">Start at the centre and draw a spiral outward, about three turns, without rushing. A finger or stylus works best; a mouse adds its own wobble.</p>
@@ -207,6 +228,97 @@ a { color: var(--accent); }
         <div class="tiles" id="spiralTiles"></div>
         <canvas class="plot" id="specCanvas" height="120" aria-label="Spectrum of the drawing's radial wobble, with the 4 to 12 hertz tremor band shaded"></canvas>
         <p class="note" id="spiralNote"></p>
+      </div>
+      <!-- TAP -->
+      <div class="panel" id="tapPanel">
+        <div class="panel-head">
+          <h3>3 · Hand: tap test</h3>
+          <span class="source-chip" id="tapSource">synthetic example</span>
+        </div>
+        <p class="small muted">Using one index finger, tap the two circles in turn as fast and evenly as you can for 15 seconds. Do the right hand, then the left.</p>
+        <canvas id="tapCanvas" aria-label="Tap test area with two circles"></canvas>
+        <div class="controls">
+          <button class="primary" id="tapRight" type="button">Start right hand</button>
+          <button id="tapLeft" type="button">Start left hand</button>
+          <button id="tapSyn" type="button">Synthetic example</button>
+        </div>
+        <div class="status" id="tapStatus" role="status"></div>
+        <div class="tiles" id="tapTiles"></div>
+        <canvas class="plot" id="tapPlot" height="110" aria-label="Time between taps across the trial, per hand"></canvas>
+        <p class="note">Speed, rhythm and slowing over the trial follow the finger-tapping item of the clinical Parkinson's rating scale (MDS-UPDRS 3.4). A gap between hands is the most useful single sign, because most causes affect one side first.</p>
+      </div>
+
+      <!-- FACE -->
+      <div class="panel" id="facePanel">
+        <div class="panel-head">
+          <h3>4 · Face: smile check</h3>
+          <span class="source-chip" id="faceSource">synthetic example</span>
+        </div>
+        <p class="small muted">Look at the camera with a relaxed face for 2 seconds, then give a big smile, relax, and smile again. About 10 seconds.</p>
+        <video id="faceVideo" class="cam" playsinline muted hidden></video>
+        <div class="controls">
+          <button class="primary" id="faceCam" type="button">Record 10 seconds</button>
+          <label class="filebtn" for="faceFile">Upload a video<input type="file" id="faceFile" accept="video/*"></label>
+          <button id="faceSynA" type="button">Synthetic: typical</button>
+          <button id="faceSynB" type="button">Synthetic: reduced expression</button>
+        </div>
+        <div class="status" id="faceStatus" role="status"></div>
+        <div class="tiles" id="faceTiles"></div>
+        <canvas class="plot" id="facePlot" height="110" aria-label="Smile size over the clip, with blinks marked"></canvas>
+        <p class="note" id="faceNote">Face tracking uses Google's MediaPipe Face Mesh (468 points), running on this device. These are measurements against the person's own baseline. There is no disease model, because no openly licensed labelled dataset exists to train or test one.</p>
+      </div>
+
+      <!-- WALK -->
+      <div class="panel wide" id="gaitPanel">
+        <div class="panel-head">
+          <h3>5 · Walking past Piko</h3>
+          <span class="source-chip" id="gaitSource">synthetic example</span>
+        </div>
+        <div class="split">
+          <div class="stack">
+            <p class="small muted">Walk across the camera's view, side-on, at your usual pace, for 3 to 5 metres, with your whole body in the frame. Height is needed once, to convert pixels to metres.</p>
+            <label class="field" for="gaitHeight">Height (cm) <input type="number" id="gaitHeight" value="165" min="120" max="210" step="1"></label>
+            <video id="gaitVideo" class="cam" playsinline muted hidden></video>
+            <div class="controls">
+              <button class="primary" id="gaitCam" type="button">Record 8 seconds</button>
+              <label class="filebtn" for="gaitFile">Upload a video<input type="file" id="gaitFile" accept="video/*"></label>
+              <button id="gaitSynA" type="button">Synthetic: typical</button>
+              <button id="gaitSynB" type="button">Synthetic: slower, uneven arms</button>
+            </div>
+            <div class="status" id="gaitStatus" role="status"></div>
+            <canvas class="plot" id="gaitPlot" height="120" aria-label="Distance between the ankles over time, with detected steps marked"></canvas>
+          </div>
+          <div class="stack">
+            <div class="tiles" id="gaitTiles"></div>
+            <p class="note">Body tracking uses Google's MediaPipe Pose (33 points). Leg length (about 0.49 of height) sets the scale. Walking speed is the strongest single number here: clinicians treat under 1.0 m/s in older adults as a yellow flag for falls and frailty. Reduced or uneven arm swing is one of the earliest visible signs of Parkinson's.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="weekly">
+    <div class="section-head">
+      <div class="label">Weekly view for family</div>
+      <h2>Compared with their own normal, not with strangers</h2>
+      <p class="muted">Piko learns each person's usual results over their first two weeks. It only speaks up when several sessions in a row drift the same way, or when something one-sided changes suddenly. These are simulated people, so you can see how it behaves.</p>
+    </div>
+    <div class="controls" role="group" aria-label="Choose a simulated person">
+      <button id="scStable" type="button">Stable</button>
+      <button id="scMotor" type="button">Slow drift across several tests</button>
+      <button id="scMobility" type="button">Walking decline only</button>
+      <button id="scAcute" type="button">Sudden one-sided change</button>
+    </div>
+    <div class="weekly-grid">
+      <div class="ev">
+        <h3 id="wkTitle">What Piko would tell the family</h3>
+        <div id="wkPrompts" class="prompts"></div>
+        <p class="small muted" id="wkStats"></p>
+      </div>
+      <div class="ev">
+        <h3>Daily results against this person's baseline</h3>
+        <div class="legend"><span><i style="background: color-mix(in srgb, var(--control) 35%, transparent)"></i>usual range (baseline ± 2 spread)</span><span><i style="background: var(--pd)"></i>sessions in the "worse" direction</span><span><i style="background: var(--muted); width: 2px;"></i>baseline ends</span></div>
+        <div id="wkCharts" class="minis"></div>
       </div>
     </div>
   </section>
@@ -227,6 +339,11 @@ a { color: var(--accent); }
         <h3>The Italian dataset's near-perfect score is mostly the room</h3>
         <p class="small muted" id="shortcutText"></p>
         <div class="chart" id="shortcutChart"></div>
+      </div>
+      <div class="ev wide">
+        <h3>What each check stands on</h3>
+        <div class="table-wrap"><table id="standsTable"></table></div>
+        <p class="small muted">Synthetic recovery means known values were injected into simulated landmark, touch or pen streams and each analyser had to measure them back. That checks the maths; it does not show disease detection.</p>
       </div>
       <div class="ev wide">
         <h3>The browser model on people, countries and microphones it never saw</h3>
@@ -258,6 +375,7 @@ a { color: var(--accent); }
           <li>The wobble around that ideal spiral is measured in radii, so screen size doesn't matter.</li>
           <li>Tremor-band share is the fraction of that wobble's energy between 4 and 12 Hz, where Parkinsonian and essential tremor sit.</li>
           <li>The spiral test shows measurements only. The validated tablet model relies on device-specific features a browser can't reproduce.</li>
+          <li>Face and walking use Google's MediaPipe Face Mesh and Pose models (Apache-2.0) on the device. Tapping uses the two-target design of the clinical finger-tapping item.</li>
         </ul>
       </div>
       <div>
@@ -265,6 +383,7 @@ a { color: var(--accent); }
         <ul>
           <li>Trained on one Turkish clinic. Your microphone, room and compression shift every measure; uncompressed WAV is best.</li>
           <li>At the default threshold the model misses many cases on new datasets. It needs recalibrating per site before any screening use.</li>
+          <li>Face, walking and tapping have no disease model: no openly licensed labelled dataset exists to train or test one. They report measures and changes from the person's own baseline.</li>
           <li>Alzheimer's and stroke modules are not included. The datasets they need (DementiaBank, TORGO) require access agreements.</li>
           <li>This is a research demo. It cannot diagnose anything, and a high score does not mean you have Parkinson's.</li>
         </ul>
@@ -273,11 +392,12 @@ a { color: var(--accent); }
   </section>
 
   <footer>
-    <div>Data: Sakar et al. 2018, UCI Parkinson's Disease Classification (CC BY 4.0) · Little et al. 2007, UCI Oxford Parkinson's (CC BY 4.0) · Dimauro &amp; Girardi 2019, Italian Parkinson's Voice and Speech, IEEE DataPort (CC BY 4.0) · Isenkul et al. 2014, UCI spiral drawings (CC BY 4.0).</div>
+    <div>Data: Sakar et al. 2018, UCI Parkinson's Disease Classification (CC BY 4.0) · Little et al. 2007, UCI Oxford Parkinson's (CC BY 4.0) · Dimauro &amp; Girardi 2019, Italian Parkinson's Voice and Speech, IEEE DataPort (CC BY 4.0) · Isenkul et al. 2014, UCI spiral drawings (CC BY 4.0). Face and body tracking: Google MediaPipe Face Mesh and Pose (Apache-2.0).</div>
     <div>Recordings and drawings are processed in your browser and never uploaded.</div>
   </footer>
 </div>
 
+<script>window.NEUROSCREEN_MEDIAPIPE_BASE = "https://cdn.jsdelivr.net/npm/"; window.NEUROSCREEN_MEDIAPIPE_RENAMED = false;</script>
 <script>/* Line-by-line JavaScript port of neuroscreen/voice_features.py.
    Input: Float64Array/Float32Array at 16 kHz. Output: same feature dictionary as Python.
    tests/parity.js checks the two implementations agree on real recordings. */
@@ -748,12 +868,602 @@ a { color: var(--accent); }
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroSpiral = api;
 })(typeof self !== "undefined" ? self : this);
 </script>
-<script>
-const MODEL = {"features": ["jitter_local", "jitter_rap", "jitter_ppq5", "period_cv", "shimmer_local", "shimmer_db", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11", "hnr_db"], "log_features": ["jitter_local", "jitter_rap", "jitter_ppq5", "period_cv", "shimmer_local", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11"], "impute_median": [-6.505634664949371, -8.180720954795024, -7.338538195074591, -4.415547606129133, -2.8872366934994336, 0.5025, -3.576265309744802, -3.390109975941537, -3.046080644210619, 19.3095], "scaler_mean": [-6.401111863248238, -8.03215191842037, -7.238615064084238, -3.9393105474998062, -2.881055181045214, 0.6064195357804233, -3.568753261408651, -3.3818877368700666, -3.066223886820649, 18.859632275132274], "scaler_scale": [0.7572521866322998, 1.046699300344485, 0.9032335079913713, 1.2892767997545076, 0.6134349291632674, 0.3823165222887691, 0.6387675989920516, 0.6214693077934884, 0.6114764461564158, 5.572783354824129], "coef": [0.5467963427676241, -0.0019269850266173064, 0.37155380056956766, -0.26703015406320374, 0.5768539360199939, -0.20382118669142762, -0.4703589720516454, -0.47638905471394444, 0.9961377456145771, 0.14039955627498546], "intercept": 0.248254540031336, "reference": {"jitter_local": {"control": {"10": 0.0006106666666666667, "25": 0.0008091666666666667, "50": 0.0011133333333333334, "75": 0.001565, "90": 0.0025506666666666672}, "parkinsons": {"10": 0.0009493333333333334, "25": 0.0012291666666666668, "50": 0.0017766666666666668, "75": 0.0031225000000000003, "90": 0.0052396666666666685}}, "jitter_rap": {"control": {"10": 8.766666666666668e-05, "25": 0.00011333333333333334, "50": 0.000195, "75": 0.00035083333333333337, "90": 0.0005780000000000001}, "parkinsons": {"10": 0.00015, "25": 0.00020583333333333334, "50": 0.000375, "75": 0.0007250000000000001, "90": 0.0014486666666666671}}, "jitter_ppq5": {"control": {"10": 0.00023866666666666668, "25": 0.000295, "50": 0.0004016666666666667, "75": 0.0006833333333333334, "90": 0.0012426666666666669}, "parkinsons": {"10": 0.0003466666666666667, "25": 0.00047666666666666663, "50": 0.0008066666666666666, "75": 0.0014858333333333334, "90": 0.002694}}, "period_cv": {"control": {"10": 0.007126946703091825, "25": 0.008211969048425014, "50": 0.01280828182301935, "75": 0.05758656166234462, "90": 0.1599714458547296}, "parkinsons": {"10": 0.00784128067151951, "25": 0.009840915729555222, "50": 0.016353239794702493, "75": 0.1135238219881934, "90": 0.18946702815946642}}, "shimmer_local": {"control": {"10": 0.021922, "25": 0.030414999999999998, "50": 0.04558166666666666, "75": 0.06686166666666665, "90": 0.10652833333333335}, "parkinsons": {"10": 0.034553, "25": 0.043295, "50": 0.062335, "75": 0.08938166666666666, "90": 0.12211600000000002}}, "shimmer_db": {"control": {"10": 0.1891, "25": 0.27008333333333334, "50": 0.40249999999999997, "75": 0.5881666666666667, "90": 0.9378000000000002}, "parkinsons": {"10": 0.30426666666666663, "25": 0.38216666666666665, "50": 0.5675, "75": 0.8160000000000001, "90": 1.1422}}, "shimmer_apq3": {"control": {"10": 0.011596, "25": 0.015112500000000001, "50": 0.02326333333333333, "75": 0.036565833333333325, "90": 0.060985666666666674}, "parkinsons": {"10": 0.01612, "25": 0.021741666666666666, "50": 0.031683333333333334, "75": 0.04509166666666667, "90": 0.06119459690000006}}, "shimmer_apq5": {"control": {"10": 0.013872333333333334, "25": 0.019137499999999998, "50": 0.027193333333333333, "75": 0.041216666666666665, "90": 0.06044433333333335}, "parkinsons": {"10": 0.020053333333333333, "25": 0.026373333333333335, "50": 0.037145, "75": 0.05456333333333334, "90": 0.07460699999999999}}, "shimmer_apq11": {"control": {"10": 0.019275, "25": 0.024130833333333334, "50": 0.03570833333333333, "75": 0.050765833333333336, "90": 0.07561333333333334}, "parkinsons": {"10": 0.029807999999999998, "25": 0.0393625, "50": 0.0531821925, "75": 0.07555583333333334, "90": 0.09740900000000001}}, "hnr_db": {"control": {"10": 14.077533333333333, "25": 18.637416666666667, "50": 21.891666666666666, "75": 23.979749999999996, "90": 25.951}, "parkinsons": {"10": 10.777666666666667, "25": 15.548166666666667, "50": 18.282833333333336, "75": 21.81725, "90": 24.0911}}}, "trained_on": "Sakar et al. 2018 (UCI, CC BY 4.0): 252 people, 756 sustained /a/ recordings"};
-const RESULTS = {"sakar_n": 252, "sakar_pd": 188, "portable": {"subj_auc": 0.7629321808510638, "subj_bacc": 0.7081615691489361, "subj_sens": 0.6835106382978724, "subj_spec": 0.7328125}, "leak": {"grouped_subj": 0.8998670212765958, "leaky_subj": 0.9860206117021276, "grouped_rec": 0.8817431294326241, "leaky_rec": 0.967507018321513}, "external": {"oxford": {"auc": 0.90625, "bacc": 0.5833333333333334, "sens": 0.16666666666666666, "spec": 1.0, "n_subjects": 32, "n_pd": 24}, "italian": {"auc": 0.4512987012987013, "bacc": 0.44642857142857145, "sens": 0.8928571428571429, "spec": 0.0, "n_subjects": 50, "n_pd": 28}}, "shortcut": {"in_dataset_auc": 0.9857142857142858, "silence_only_auc": 0.8373376623376624, "silence_only_bacc": 0.8022727272727274, "physiology_model_transfer_auc": 0.4512987012987013, "noise_floor_db_median": {"pd": -39.34662104895128, "control": -65.71948996125965}, "biomarker_directions": {"jitter_local": {"pd_median": 0.00407961562482383, "control_median": 0.007098833398052416, "expected": "higher in PD", "observed": "lower in PD"}, "shimmer_local": {"pd_median": 0.029074490002553292, "control_median": 0.05197458063952963, "expected": "higher in PD", "observed": "lower in PD"}, "hnr_db": {"pd_median": 24.583720393519265, "control_median": 18.975330259069253, "expected": "lower in PD", "observed": "higher in PD"}}}, "spiral": {"dataset": "UCI digitized-tablet spiral drawings (Isenkul et al. 2014), features from github.com/shiwalisingh0/Parkinson-disease-detection-", "n_people": 77, "n_pd": 62, "n_control": 15, "all_tests": {"auc": 0.871989247311828, "auc_sd": 0.021768484582793825, "balanced_accuracy": 0.8633602150537636}, "static_spiral_only": {"auc": 0.8059139784946237, "auc_sd": 0.027817580455578635, "balanced_accuracy": 0.789731182795699}}};
+<script>/* Smile check: facial expressivity from MediaPipe Face Mesh landmarks (468 points per frame).
+   Input: frames = [{t: seconds, lm: [[x, y, z], ...468] in pixels}] (missing face -> lm: null).
+   Every distance is divided by the inter-ocular distance (outer eye corners), and measured in a
+   face-aligned frame (x along the eye line), so camera distance and head tilt cancel out.
+   Measures follow the hypomimia literature: smile amplitude, onset speed, left-right asymmetry,
+   cheek raise (eye narrowing during a genuine smile), blink rate and resting facial motion. */
+(function (root) {
+  "use strict";
+  const I = {
+    eyeOutR: 33, eyeOutL: 263, mouthR: 61, mouthL: 291, lipUp: 13, lipLow: 14, nose: 1,
+    eyeR: [33, 160, 158, 133, 153, 144], eyeL: [362, 385, 387, 263, 373, 380],
+  };
+  const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const median = (a) => { const b = [...a].sort((x, y) => x - y); const n = b.length; return n ? (n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2) : NaN; };
+  const pct = (a, q) => { const b = [...a].sort((x, y) => x - y); if (!b.length) return NaN; const p = (b.length - 1) * q / 100, lo = Math.floor(p), hi = Math.ceil(p); return b[lo] + (b[hi] - b[lo]) * (p - lo); };
+
+  // eye aspect ratio (Soukupova & Cech 2016): vertical lid gaps over eye width
+  const ear = (lm, e) => (d2(lm[e[1]], lm[e[5]]) + d2(lm[e[2]], lm[e[4]])) / (2 * d2(lm[e[0]], lm[e[3]]));
+
+  // express a point in the face frame: origin between the outer eye corners, x along the eye line, units of IOD
+  function faceFrame(lm) {
+    const a = lm[I.eyeOutR], b = lm[I.eyeOutL];
+    const ox = (a[0] + b[0]) / 2, oy = (a[1] + b[1]) / 2, iod = d2(a, b);
+    const ux = (b[0] - a[0]) / iod, uy = (b[1] - a[1]) / iod;            // eye-line direction
+    const vx = -uy, vy = ux;                                                // perpendicular (down the face)
+    return { iod, map: (p) => [((p[0] - ox) * ux + (p[1] - oy) * uy) / iod, ((p[0] - ox) * vx + (p[1] - oy) * vy) / iod] };
+  }
+
+  function smooth(a, w) {
+    return a.map((_, i) => { let s = 0, c = 0; for (let j = Math.max(0, i - w); j <= Math.min(a.length - 1, i + w); j++) { s += a[j]; c++; } return s / c; });
+  }
+
+  function analyse(frames) {
+    const ok = frames.filter((f) => f.lm);
+    const quality = { frames: frames.length, face_found_pct: frames.length ? (100 * ok.length) / frames.length : 0 };
+    if (ok.length < 15) return { error: "No face found for long enough. Face the camera in good light, about an arm's length away.", quality };
+    const t = ok.map((f) => f.t), dur = t[t.length - 1] - t[0];
+    const F = ok.map((f) => faceFrame(f.lm));
+    const P = ok.map((f, i) => ({ mr: F[i].map(f.lm[I.mouthR]), ml: F[i].map(f.lm[I.mouthL]), up: F[i].map(f.lm[I.lipUp]), lo: F[i].map(f.lm[I.lipLow]) }));
+    // head turn: the nose sits midway between the eyes when facing the camera
+    const yaw = ok.map((f, i) => F[i].map(f.lm[I.nose])[0]);
+    quality.head_turn = median(yaw.map(Math.abs));
+
+    const width = smooth(P.map((p) => Math.hypot(p.ml[0] - p.mr[0], p.ml[1] - p.mr[1])), 1);
+    // corner lift: how far the corners sit above the lip centre line (positive = raised)
+    const lift = smooth(P.map((p) => ((p.up[1] + p.lo[1]) / 2) - (p.mr[1] + p.ml[1]) / 2), 1);
+    const w0 = pct(width, 10), l0 = pct(lift, 10);
+    const S = width.map((w, i) => (w - w0) + (lift[i] - l0));          // smile index, IOD units
+    const peak = pct(S, 98);
+    const earv = ok.map((f) => (ear(f.lm, I.eyeR) + ear(f.lm, I.eyeL)) / 2);
+
+    // smile episodes: above half of the peak for at least 0.3 s
+    const thr = 0.5 * peak, events = [];
+    let start = null;
+    for (let i = 0; i <= S.length; i++) {
+      const on = i < S.length && S[i] > thr;
+      if (on && start === null) start = i;
+      if (!on && start !== null) { if (t[i - 1] - t[start] >= 0.3) events.push([start, i - 1]); start = null; }
+    }
+    const metrics = { smile_amplitude: NaN, width_gain_pct: NaN, onset_s: NaN, asymmetry_pct: NaN, cheek_raise_pct: NaN, repeat_ratio: NaN, blink_rate_per_min: NaN, rest_motion: NaN };
+    const neutralIdx = S.map((v, i) => i).filter((i) => S[i] < 0.2 * peak);
+    if (peak > 0.04 && events.length) {
+      metrics.smile_amplitude = peak;
+      const ev = events[0];
+      let pi = ev[0]; for (let i = ev[0]; i <= ev[1]; i++) if (S[i] > S[pi]) pi = i;
+      metrics.width_gain_pct = 100 * (width[pi] / w0 - 1);
+      // onset: last time before the peak at 10% of it, to first time at 90%
+      let a = pi; while (a > 0 && S[a] > 0.1 * S[pi]) a--;
+      let b = a; while (b < pi && S[b] < 0.9 * S[pi]) b++;
+      metrics.onset_s = t[b] - t[a];
+      // asymmetry: each corner's movement from its neutral position
+      const nr = [median(neutralIdx.map((i) => P[i].mr[0])), median(neutralIdx.map((i) => P[i].mr[1]))];
+      const nl = [median(neutralIdx.map((i) => P[i].ml[0])), median(neutralIdx.map((i) => P[i].ml[1]))];
+      const dR = Math.hypot(P[pi].mr[0] - nr[0], P[pi].mr[1] - nr[1]), dL = Math.hypot(P[pi].ml[0] - nl[0], P[pi].ml[1] - nl[1]);
+      metrics.asymmetry_pct = (100 * Math.abs(dR - dL)) / (dR + dL);
+      const earN = median(neutralIdx.map((i) => earv[i]));
+      const earS = median(earv.slice(Math.max(ev[0], pi - 2), Math.min(ev[1], pi + 2) + 1));
+      metrics.cheek_raise_pct = (100 * (earN - earS)) / earN;
+      if (events.length > 1) {
+        const pk = (e) => Math.max(...S.slice(e[0], e[1] + 1));
+        metrics.repeat_ratio = pk(events[events.length - 1]) / pk(events[0]);
+      }
+    }
+    // blinks: eye aspect ratio falls below 60% of its median, briefly (< 0.5 s)
+    const earMed = median(earv); let blinks = 0, inB = false, bStart = 0;
+    for (let i = 0; i < earv.length; i++) {
+      const closed = earv[i] < 0.6 * earMed;
+      if (closed && !inB) { inB = true; bStart = t[i]; }
+      if (!closed && inB) { inB = false; if (t[i] - bStart < 0.5) blinks++; }
+    }
+    if (dur >= 5) metrics.blink_rate_per_min = (60 * blinks) / dur;
+    // resting facial motion: median movement of all landmarks between neutral frames, IOD per second
+    const mv = [];
+    for (let k = 1; k < neutralIdx.length; k++) {
+      const i = neutralIdx[k], j = neutralIdx[k - 1]; if (i !== j + 1) continue;
+      const A = ok[i].lm, B = ok[j].lm, fa = F[i], fb = F[j]; let s = 0, n = 0;
+      for (let q = 0; q < A.length; q += 4) { const pa = fa.map(A[q]), pb = fb.map(B[q]); s += Math.hypot(pa[0] - pb[0], pa[1] - pb[1]); n++; }
+      mv.push(s / n / (t[i] - t[j]));
+    }
+    if (mv.length > 5) metrics.rest_motion = median(mv);
+    quality.duration_s = dur; quality.smiles_found = events.length;
+    if (quality.head_turn > 0.25) quality.warning = "The head was turned away from the camera, which makes the asymmetry figure unreliable.";
+    if (!events.length) quality.warning = "No clear smile was found. Hold a relaxed face, then give one big smile.";
+    return { metrics, quality, series: { t, smile: S, ear: earv } };
+  }
+
+  // synthetic landmark generator for tests and the demo: a face template with animated mouth corners and eyelids
+  function simulate({ seconds = 10, fps = 30, smiles = [[2.5, 4.5], [6.5, 8.5]], amplitude = 0.12, onset = 0.35, asym = 0, blinksPerMin = 15, seed = 5 } = {}) {
+    let s = seed >>> 0; const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let x = s; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    const base = []; for (let i = 0; i < 468; i++) base.push([300 + 120 * (rnd() - 0.5), 300 + 150 * (rnd() - 0.5), 0]);
+    const set = (i, x, y) => { base[i] = [x, y, 0]; };
+    set(33, 240, 260); set(263, 360, 260); set(133, 280, 262); set(362, 320, 262);
+    set(160, 252, 254); set(158, 268, 254); set(153, 268, 266); set(144, 252, 266);
+    set(385, 332, 254); set(387, 348, 254); set(373, 348, 266); set(380, 332, 266);
+    set(1, 300, 310); set(61, 270, 360); set(291, 330, 360); set(13, 300, 356); set(14, 300, 366);
+    const blinkTimes = []; for (let x = 1.2; x < seconds; x += 60 / blinksPerMin) blinkTimes.push(x + 0.3 * (rnd() - 0.5));
+    const frames = [];
+    for (let k = 0; k < seconds * fps; k++) {
+      const tt = k / fps; let sm = 0;
+      for (const [a, b] of smiles) {
+        const rise = (x) => x <= 0 ? 0 : x >= 1 ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * x);
+        sm = Math.max(sm, Math.min(rise((tt - a) / (onset / 0.8)), 1 - rise((tt - b) / 0.4)));
+      }
+      const lm = base.map((p) => [p[0] + 0.15 * (rnd() - 0.5), p[1] + 0.15 * (rnd() - 0.5), 0]);
+      const iod = 120, A = amplitude * iod * sm;
+      lm[61] = [270 - A * 0.55 * (1 - asym), 360 - A * 0.45 * (1 - asym), 0];
+      lm[291] = [330 + A * 0.55 * (1 + asym), 360 - A * 0.45 * (1 + asym), 0];
+      const squint = 1 - 0.25 * sm; let lid = 1;
+      for (const bt of blinkTimes) if (Math.abs(tt - bt) < 0.08) lid = 0.15;
+      for (const [u, l] of [[160, 144], [158, 153], [385, 380], [387, 373]]) {
+        const cy = 260, h = 6 * squint * lid; lm[u] = [base[u][0], cy - h, 0]; lm[l] = [base[l][0], cy + h, 0];
+      }
+      frames.push({ t: tt, lm });
+    }
+    return frames;
+  }
+
+  const api = { analyse, simulate };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroFace = api;
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>/* Walking check: gait measures from MediaPipe Pose landmarks (33 points per frame) while a person
+   walks across the camera's view (side-on, 4-6 metres).
+   Input: frames = [{t: seconds, lm: [[x, y, z, visibility], ...33] in pixels}] (no person -> lm: null),
+          heightCm = the person's height (stored once in their profile).
+   Scale comes from leg length: hip-to-ankle is about 0.49 of standing height in adults (hip joint at
+   ~0.53 H, ankle at ~0.04 H), so pixels convert to metres without any calibration object.
+   Measures: walking speed (the "sixth vital sign"), cadence, step length, stride-time variability,
+   arm-swing amplitude per side and its asymmetry, and forward trunk lean. */
+(function (root) {
+  "use strict";
+  const L = { sh: [11, 12], wr: [15, 16], hip: [23, 24], ank: [27, 28] };
+  const LEG_FRACTION = 0.49;
+  const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const median = (a) => { const b = [...a].sort((x, y) => x - y); const n = b.length; return n ? (n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2) : NaN; };
+  const pct = (a, q) => { const b = [...a].sort((x, y) => x - y); if (!b.length) return NaN; const p = (b.length - 1) * q / 100, lo = Math.floor(p), hi = Math.ceil(p); return b[lo] + (b[hi] - b[lo]) * (p - lo); };
+  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+  const sd = (a) => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / a.length); };
+  const smooth = (a, w) => a.map((_, i) => { let s = 0, c = 0; for (let j = Math.max(0, i - w); j <= Math.min(a.length - 1, i + w); j++) { s += a[j]; c++; } return s / c; });
+  const mid = (lm, [a, b]) => [(lm[a][0] + lm[b][0]) / 2, (lm[a][1] + lm[b][1]) / 2];
+
+  function linfit(x, y) {
+    const n = x.length, mx = mean(x), my = mean(y); let sxy = 0, sxx = 0;
+    for (let i = 0; i < n; i++) { sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; }
+    const b = sxy / sxx; return [b, my - b * mx];
+  }
+
+  // local extrema with a minimum prominence, alternating max/min
+  function extrema(sig, minProm) {
+    const out = [];
+    for (let i = 1; i < sig.length - 1; i++) {
+      const isMax = sig[i] >= sig[i - 1] && sig[i] > sig[i + 1], isMin = sig[i] <= sig[i - 1] && sig[i] < sig[i + 1];
+      if (!isMax && !isMin) continue;
+      const type = isMax ? 1 : -1;
+      if (out.length && out[out.length - 1].type === type) {
+        const last = out[out.length - 1];
+        if ((type === 1 && sig[i] > sig[last.i]) || (type === -1 && sig[i] < sig[last.i])) out[out.length - 1] = { i, type };
+        continue;
+      }
+      if (out.length && Math.abs(sig[i] - sig[out[out.length - 1].i]) < minProm) continue;
+      out.push({ i, type });
+    }
+    return out;
+  }
+
+  function analyse(frames, heightCm) {
+    const vis = (lm, ids) => Math.min(...ids.map((k) => (lm[k][3] ?? 1)));
+    const ok = frames.filter((f) => f.lm && vis(f.lm, [23, 24, 27, 28]) > 0.5);
+    const quality = { frames: frames.length, person_found_pct: frames.length ? (100 * ok.length) / frames.length : 0 };
+    if (!heightCm || heightCm < 100 || heightCm > 230) return { error: "Enter the person's height (in cm) so distances can be measured.", quality };
+    if (ok.length < 20) return { error: "Couldn't follow a whole person walking. Walk across the camera's view, side-on, with your whole body in frame.", quality };
+    const t = ok.map((f) => f.t);
+    const legPx = pct(ok.map((f) => (d2(f.lm[23], f.lm[27]) + d2(f.lm[24], f.lm[28])) / 2), 90);
+    const mPerPx = (LEG_FRACTION * heightCm / 100) / legPx;
+    const pelvisX = ok.map((f) => mid(f.lm, L.hip)[0] * mPerPx);
+    const dir = Math.sign(pelvisX[pelvisX.length - 1] - pelvisX[0]) || 1;
+    // steady middle of the walk: drop the first and last 15% of frames (starting and stopping)
+    const a = Math.floor(0.15 * ok.length), b = Math.ceil(0.85 * ok.length);
+    const tm = t.slice(a, b), xm = pelvisX.slice(a, b);
+    const [slope] = linfit(tm, xm);
+    const speed = Math.abs(slope);
+    const travelled = Math.abs(pelvisX[pelvisX.length - 1] - pelvisX[0]);
+    quality.duration_s = t[t.length - 1] - t[0]; quality.distance_m = travelled;
+    if (travelled < 1.5 || speed < 0.2) return { error: `Only ${travelled.toFixed(1)} m of sideways walking was seen. Walk across the camera's view, side-on, for at least 3 metres.`, quality };
+
+    // steps: the signed forward distance between the ankles peaks at each heel strike
+    const sep = smooth(ok.map((f) => dir * (f.lm[27][0] - f.lm[28][0]) * mPerPx), 1);
+    const amp = pct(sep, 95) - pct(sep, 5);
+    const ex = extrema(sep, 0.3 * amp);
+    // refine each step time between frames with a parabola through the peak and its neighbours
+    const stepT = ex.map((e) => {
+      const i = e.i; if (i < 1 || i >= sep.length - 1) return t[i];
+      const y0 = sep[i - 1], y1 = sep[i], y2 = sep[i + 1], den = y0 - 2 * y1 + y2;
+      const dlt = Math.abs(den) > 1e-12 ? Math.max(-0.5, Math.min(0.5, 0.5 * (y0 - y2) / den)) : 0;
+      return t[i] + dlt * (t[i + 1] - t[i - 1]) / 2;
+    });
+    const metrics = { speed_m_s: speed, cadence_steps_min: NaN, step_length_m: NaN, stride_time_cv_pct: NaN, arm_swing_left: NaN, arm_swing_right: NaN, arm_swing_asym_pct: NaN, trunk_lean_deg: NaN };
+    if (stepT.length >= 4) {
+      const stepMean = (stepT[stepT.length - 1] - stepT[0]) / (stepT.length - 1);
+      metrics.cadence_steps_min = 60 / stepMean;
+      metrics.step_length_m = speed * stepMean;
+      const strides = []; for (let i = 2; i < stepT.length; i++) strides.push(stepT[i] - stepT[i - 2]);
+      if (strides.length >= 3) metrics.stride_time_cv_pct = (100 * sd(strides)) / mean(strides);
+    }
+    quality.steps_found = stepT.length;
+
+    // arm swing: wrist movement forward/back relative to its shoulder, in metres (peak to peak)
+    const swing = (side) => {
+      const v = ok.filter((f) => vis(f.lm, [L.wr[side], L.sh[side]]) > 0.3).map((f) => dir * (f.lm[L.wr[side]][0] - f.lm[L.sh[side]][0]) * mPerPx);
+      return v.length > 10 ? pct(v, 95) - pct(v, 5) : NaN;
+    };
+    metrics.arm_swing_left = swing(0); metrics.arm_swing_right = swing(1);
+    if (Number.isFinite(metrics.arm_swing_left) && Number.isFinite(metrics.arm_swing_right)) {
+      const hi = Math.max(metrics.arm_swing_left, metrics.arm_swing_right);
+      metrics.arm_swing_asym_pct = hi > 0 ? (100 * Math.abs(metrics.arm_swing_left - metrics.arm_swing_right)) / hi : NaN;
+    }
+    // trunk lean: angle of hips->shoulders from vertical, positive = leaning in the walking direction
+    metrics.trunk_lean_deg = median(ok.map((f) => {
+      const h = mid(f.lm, L.hip), s = mid(f.lm, L.sh);
+      return (Math.atan2(dir * (s[0] - h[0]), h[1] - s[1]) * 180) / Math.PI;
+    }));
+    quality.far_side_visibility = median(ok.map((f) => Math.min(f.lm[15][3] ?? 1, f.lm[16][3] ?? 1)));
+    return { metrics, quality, series: { t, pelvisX, sep } };
+  }
+
+  // synthetic walker for tests and the demo (side view, pixels; image y points down)
+  function simulate({ heightCm = 170, speed = 1.2, cadence = 110, armL = 0.30, armR = 0.30, lean = 4, strideJitter = 0.02, seconds = 6, fps = 30, seed = 3 } = {}) {
+    let s = seed >>> 0; const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let x = s; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    const pxPerM = 300, H = heightCm / 100, stepT = 60 / cadence, stepLen = speed * stepT;
+    // stride durations with the requested variability (uniform noise scaled so its SD = strideJitter)
+    const strides = [], bounds = [0];
+    while (bounds[bounds.length - 1] < seconds + 2) { const d = 2 * stepT * (1 + strideJitter * Math.sqrt(3) * (rnd() * 2 - 1)); strides.push(d); bounds.push(bounds[bounds.length - 1] + d); }
+    const phaseAt = (t) => { let c = 0; while (bounds[c + 1] <= t) c++; return 2 * Math.PI * (c + (t - bounds[c]) / strides[c]); };
+    const frames = [];
+    for (let k = 0; k < seconds * fps; k++) {
+      const t = k / fps, phase = phaseAt(t);
+      const px = 100 + speed * t * pxPerM, hipY = 600 - 0.53 * H * pxPerM, ankY = 600 - 0.04 * H * pxPerM;
+      const lm = Array.from({ length: 33 }, () => [px, hipY, 0, 0.9]);
+      const legDx = (stepLen / 2) * Math.sin(phase) * pxPerM, armDx = (side) => (side ? armR : armL) / 2 * Math.sin(phase + Math.PI) * pxPerM;
+      const shY = 600 - 0.82 * H * pxPerM, leanDx = Math.tan((lean * Math.PI) / 180) * (hipY - shY);
+      lm[23] = [px - 4, hipY, 0, 0.95]; lm[24] = [px + 4, hipY, 0, 0.95];
+      lm[11] = [px + leanDx - 4, shY, 0, 0.95]; lm[12] = [px + leanDx + 4, shY, 0, 0.95];
+      // keep hip-to-ankle length fixed: the ankle drops slightly as the leg swings out
+      const legLen = (0.53 - 0.04) * H * pxPerM;
+      const ankle = (dx) => [px + dx, hipY + Math.sqrt(Math.max(1, legLen ** 2 - dx ** 2)), 0, 0.9];
+      lm[27] = ankle(legDx); lm[28] = ankle(-legDx);
+      lm[15] = [lm[11][0] - armDx(0), shY + 0.35 * H * pxPerM, 0, 0.8];
+      lm[16] = [lm[12][0] + armDx(1), shY + 0.35 * H * pxPerM, 0, 0.8];
+      for (const p of lm) { p[0] += 0.8 * (rnd() - 0.5); p[1] += 0.8 * (rnd() - 0.5); }
+      frames.push({ t, lm });
+    }
+    return frames;
+  }
+
+  const api = { analyse, simulate, LEG_FRACTION };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroGait = api;
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>/* Tap test: alternate between two on-screen targets with one index finger, as fast and evenly as
+   possible, for a fixed time per hand (the two-target design used in mPower and the clinic's
+   finger-tapping item of MDS-UPDRS 3.4).
+   Input per hand: { duration_s, targets: [{x, y, r}, {x, y, r}], taps: [{t (s), x, y}] }.
+   Measures: speed, rhythm variability, decrement (slowing over the trial), accuracy, alternation
+   errors, and left-right asymmetry. */
+(function (root) {
+  "use strict";
+  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+  const sd = (a) => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / a.length); };
+
+  function analyseHand({ duration_s, targets, taps }) {
+    const T = taps.filter((p) => p.t >= 0 && p.t <= duration_s).sort((a, b) => a.t - b.t);
+    if (T.length < 6) return { error: "Too few taps. Alternate between the two circles as fast as you comfortably can." };
+    const nearest = T.map((p) => {
+      const d = targets.map((g) => Math.hypot(p.x - g.x, p.y - g.y) / g.r);
+      const k = d[0] <= d[1] ? 0 : 1; return { k, dist: d[k] };
+    });
+    const hits = nearest.filter((n) => n.dist <= 1).length;
+    let sameTarget = 0; for (let i = 1; i < nearest.length; i++) if (nearest[i].k === nearest[i - 1].k) sameTarget++;
+    const iti = T.slice(1).map((p, i) => p.t - T[i].t);
+    // rate in the first and last thirds of the trial
+    // (timed from the first tap, so a slow start doesn't count as speeding up)
+    const t0 = T[0].t, third = (duration_s - t0) / 3;
+    const rate = (a, b) => T.filter((p) => p.t >= a && p.t < b).length / (b - a);
+    const r1 = rate(t0, t0 + third), r3 = rate(t0 + 2 * third, duration_s + 1e-9);
+    return {
+      taps: T.length,
+      rate_hz: T.length / duration_s,
+      iti_ms: 1000 * mean(iti),
+      iti_cv_pct: (100 * sd(iti)) / mean(iti),
+      decrement_pct: r1 > 0 ? (100 * (r1 - r3)) / r1 : 0,
+      miss_pct: (100 * (T.length - hits)) / T.length,
+      error_radius: mean(nearest.map((n) => n.dist)),
+      alternation_errors_pct: (100 * sameTarget) / (T.length - 1),
+    };
+  }
+
+  function analyse(right, left) {
+    const R = right ? analyseHand(right) : null, Lh = left ? analyseHand(left) : null;
+    const out = { right: R, left: Lh, asymmetry_pct: NaN };
+    if (R && Lh && !R.error && !Lh.error) out.asymmetry_pct = (100 * Math.abs(R.rate_hz - Lh.rate_hz)) / Math.max(R.rate_hz, Lh.rate_hz);
+    return out;
+  }
+
+  // synthetic tapper: base rate, timing jitter, slowing across the trial, and aim scatter
+  function simulate({ duration_s = 15, rateHz = 5, jitter = 0.08, decrement = 0, aim = 0.35, seed = 9 } = {}) {
+    let s = seed >>> 0; const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let x = s; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const targets = [{ x: 100, y: 200, r: 45 }, { x: 300, y: 200, r: 45 }];
+    const taps = []; let t = 0.3, k = 0;
+    while (t < duration_s) {
+      const g = targets[k % 2];
+      taps.push({ t, x: g.x + aim * g.r * gauss() * 0.7, y: g.y + aim * g.r * gauss() * 0.7 });
+      const r = rateHz * (1 - decrement * (t / duration_s));
+      t += Math.max(0.05, (1 / r) * (1 + jitter * gauss())); k++;
+    }
+    return { duration_s, targets, taps };
+  }
+
+  const api = { analyse, analyseHand, simulate };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroTap = api;
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>/* Per-person baseline and change engine.
+   Each person is compared with their own first weeks, not with population norms, because the robot,
+   room and microphone stay the same and people differ a lot from each other.
+   - baseline: median and MAD of a metric over the person's first sessions (robust to bad days)
+   - sustained change: the median of the last 5 sessions is far outside baseline (judged against its
+     standard error) and at least 4 of those 5 sessions point the same way
+   - sudden change (one-sided metrics only): today far outside baseline while yesterday was normal
+   - patterns: changes are grouped by domain (voice, face, walking, hands) and combined into
+     plain-language prompts. Prompts point to an area to discuss with a doctor; they never name a disease. */
+(function (root) {
+  "use strict";
+  const REGISTRY = {
+    voice_score:          { label: "Voice model score",          domain: "voice", worse: "up" },
+    jitter_local:         { label: "Voice jitter",               domain: "voice", worse: "up" },
+    shimmer_local:        { label: "Voice shimmer",              domain: "voice", worse: "up" },
+    hnr_db:               { label: "Voice clarity (HNR)",        domain: "voice", worse: "down" },
+    smile_amplitude:      { label: "Smile size",                 domain: "face",  worse: "down" },
+    onset_s:              { label: "Smile speed (onset time)",   domain: "face",  worse: "up" },
+    asymmetry_pct:        { label: "Smile asymmetry",            domain: "face",  worse: "up", acute: true, acuteMin: 15 },
+    blink_rate_per_min:   { label: "Blink rate",                 domain: "face",  worse: "down" },
+    speed_m_s:            { label: "Walking speed",              domain: "gait",  worse: "down" },
+    step_length_m:        { label: "Step length",                domain: "gait",  worse: "down" },
+    stride_time_cv_pct:   { label: "Stride variability",         domain: "gait",  worse: "up" },
+    arm_swing_asym_pct:   { label: "Arm-swing asymmetry",        domain: "gait",  worse: "up" },
+    trunk_lean_deg:       { label: "Forward lean",               domain: "gait",  worse: "up" },
+    tap_rate_hz:          { label: "Tapping speed",              domain: "hand",  worse: "down" },
+    tap_decrement_pct:    { label: "Tapping slow-down",          domain: "hand",  worse: "up" },
+    tap_iti_cv_pct:       { label: "Tapping rhythm variability", domain: "hand",  worse: "up" },
+    tap_asymmetry_pct:    { label: "Left-right tapping gap",     domain: "hand",  worse: "up", acute: true, acuteMin: 20 },
+    tremor_band_share:    { label: "Spiral tremor",              domain: "hand",  worse: "up" },
+  };
+  const DOMAIN_NAMES = { voice: "voice", face: "facial expression", gait: "walking", hand: "hand movement" };
+  let Z_SUSTAINED = 4, Z_ACUTE = 5, MIN_BASELINE = 6, K_RECENT = 5;
+
+  const median = (a) => { const b = [...a].sort((x, y) => x - y); const n = b.length; return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+
+  // Theil-Sen slope: median of pairwise slopes, robust to outliers
+  function theilSen(x, y) {
+    const s = []; for (let i = 0; i < x.length; i++) for (let j = i + 1; j < x.length; j++) if (x[j] !== x[i]) s.push((y[j] - y[i]) / (x[j] - x[i]));
+    return s.length ? median(s) : 0;
+  }
+
+  const dayNum = (d) => Math.round(new Date(d + "T00:00:00Z").getTime() / 86400000);
+
+  function evaluate(sessions) {
+    const S = [...sessions].sort((a, b) => (a.date < b.date ? -1 : 1));
+    const results = {};
+    for (const [key, meta] of Object.entries(REGISTRY)) {
+      const pts = S.map((s) => ({ d: dayNum(s.date), date: s.date, v: s.metrics[key] })).filter((p) => Number.isFinite(p.v));
+      if (pts.length < MIN_BASELINE + K_RECENT) continue;
+      const nb = Math.max(MIN_BASELINE, Math.min(14, pts.length - K_RECENT));
+      const base = pts.slice(0, nb).map((p) => p.v);
+      const med = median(base);
+      const mad = 1.4826 * median(base.map((v) => Math.abs(v - med)));
+      // the larger of the robust and classical spread: a short baseline can make the MAD alone too small
+      const bm = base.reduce((a, b) => a + b, 0) / base.length;
+      const bsd = Math.sqrt(base.reduce((a, b) => a + (b - bm) ** 2, 0) / (base.length - 1));
+      const scale = Math.max(mad, bsd, 0.05 * Math.abs(med), 1e-9);
+      const sign = meta.worse === "up" ? 1 : -1;
+      const z = pts.map((p) => (sign * (p.v - med)) / scale);
+      // sustained change: the median of the last 5 sessions sits far beyond baseline (using its
+      // standard error, inflated for a short baseline) and most of those sessions agree
+      const seMed = (1.2533 / Math.sqrt(K_RECENT)) * (1 + 1 / Math.sqrt(nb));
+      const windowFlag = (end) => {
+        const w = z.slice(end - K_RECENT, end);
+        const zr = w.length === K_RECENT ? median(w) / seMed : 0;
+        return { zr, hit: zr >= Z_SUSTAINED && w.filter((v) => v >= 1.5).length >= 4 };
+      };
+      const now = windowFlag(z.length), prev = windowFlag(z.length - 1);
+      const zRecent = now.zr;
+      // must hold on two consecutive days, so one noisy session can't trigger it
+      const sustained = now.hit && prev.hit;
+      const jump = pts[pts.length - 1].v - med;
+      const acute = !!meta.acute && z[z.length - 1] >= Z_ACUTE && z[z.length - 2] < 2 && jump >= meta.acuteMin;
+      const lastDays = pts.filter((p) => p.d >= pts[pts.length - 1].d - 28);
+      const trendPerWeek = 7 * theilSen(lastDays.map((p) => p.d), lastDays.map((p, i) => z[pts.length - lastDays.length + i]));
+      results[key] = { ...meta, key, baseline: med, scale, latest: pts[pts.length - 1].v, z_latest: z[z.length - 1], z_recent: zRecent, sustained, acute, trend_z_per_week: trendPerWeek, series: pts.map((p, i) => ({ date: p.date, v: p.v, z: z[i] })) };
+    }
+    return { metrics: results, patterns: patterns(results) };
+  }
+
+  function patterns(R) {
+    const out = [];
+    const flagged = Object.values(R).filter((m) => m.sustained);
+    const byDomain = {}; for (const m of flagged) (byDomain[m.domain] = byDomain[m.domain] || []).push(m);
+    const names = (ms) => ms.map((m) => m.label.toLowerCase()).join(", ");
+    const Names = (ms) => { const t = names(ms); return t.charAt(0).toUpperCase() + t.slice(1); };
+
+    const acute = Object.values(R).filter((m) => m.acute);
+    if (acute.length) out.push({
+      level: "urgent", title: "Sudden one-sided change today",
+      text: `${Names(acute)} changed sharply since yesterday. Check in now: if you see a drooping face, arm weakness or slurred speech, call emergency services immediately.`,
+      metrics: acute.map((m) => m.key),
+    });
+    const motorDomains = ["face", "gait", "hand", "voice"].filter((d) => byDomain[d]);
+    if (motorDomains.length >= 2) out.push({
+      level: "discuss", title: `Changes in ${motorDomains.length} movement tests`,
+      text: `Over recent weeks, ${motorDomains.map((d) => DOMAIN_NAMES[d]).join(", ")} have all drifted from this person's usual (${names(flagged)}). One test changing is often noise; several together are worth raising with a doctor or neurologist. Bring this summary.`,
+      metrics: flagged.map((m) => m.key),
+    });
+    else {
+      if (byDomain.gait) out.push({
+        level: "watch", title: "Walking has changed",
+        text: `${Names(byDomain.gait)} moved away from usual. Ask about pain, dizziness, new medicines or a recent fall; a falls-risk check with the doctor is worth booking if it persists.`,
+        metrics: byDomain.gait.map((m) => m.key),
+      });
+      if (byDomain.voice) out.push({
+        level: "watch", title: "Voice has changed",
+        text: `${Names(byDomain.voice)} differ from usual. Ask about a cold, sore throat or breathlessness. If it lasts beyond two weeks, mention it to the doctor.`,
+        metrics: byDomain.voice.map((m) => m.key),
+      });
+      if (byDomain.face) out.push({ level: "watch", title: "Facial expression has changed", text: `${Names(byDomain.face)} differ from usual. Low mood, tiredness and some medicines can do this; ask how they've been feeling.`, metrics: byDomain.face.map((m) => m.key) });
+      if (byDomain.hand) out.push({ level: "watch", title: "Hand tests have changed", text: `${Names(byDomain.hand)} differ from usual. Ask about new medicines, caffeine, poor sleep or hand pain.`, metrics: byDomain.hand.map((m) => m.key) });
+    }
+    // voice getting rougher at the same time as walking slows: breathing or fluid problems are one possibility
+    if (byDomain.voice && R.speed_m_s && R.speed_m_s.trend_z_per_week >= 0.7) out.push({
+      level: "discuss", title: "Voice and stamina dropped together",
+      text: "Voice quality and walking speed have both been declining. Check for breathlessness, swollen ankles, fever or cough, and call the doctor if any are present.",
+      metrics: ["speed_m_s", ...byDomain.voice.map((m) => m.key)],
+    });
+    const recentSpeed = R.speed_m_s ? median(R.speed_m_s.series.slice(-K_RECENT).map((p) => p.v)) : NaN;
+    if (R.speed_m_s && R.speed_m_s.series.length >= K_RECENT && recentSpeed < 1.0 && R.speed_m_s.baseline >= 1.0) out.push({
+      level: "watch", title: "Walking speed below 1.0 m/s",
+      text: `Typical walking speed over the last ${K_RECENT} checks is ${recentSpeed.toFixed(2)} m/s. Clinicians treat walking slower than 1.0 m/s in older adults as a yellow flag for falls and frailty.`,
+      metrics: ["speed_m_s"],
+    });
+    return out;
+  }
+
+  // ---- synthetic histories for tests and the demo ----
+  const TYPICAL = { // [mean, between-day SD] for a healthy older adult measured by the same device
+    voice_score: [0.45, 0.06], jitter_local: [0.006, 0.0012], shimmer_local: [0.035, 0.006], hnr_db: [21, 1.5],
+    smile_amplitude: [0.18, 0.02], onset_s: [0.45, 0.06], asymmetry_pct: [6, 2.5], blink_rate_per_min: [16, 3],
+    speed_m_s: [1.15, 0.06], step_length_m: [0.62, 0.03], stride_time_cv_pct: [2.2, 0.5], arm_swing_asym_pct: [12, 5], trunk_lean_deg: [5, 1.2],
+    tap_rate_hz: [4.6, 0.3], tap_decrement_pct: [3, 4], tap_iti_cv_pct: [9, 1.5], tap_asymmetry_pct: [8, 4], tremor_band_share: [0.25, 0.07],
+  };
+  const DRIFT = { // change at full effect, in units of the metric
+    motor: { smile_amplitude: -0.07, onset_s: 0.25, arm_swing_asym_pct: 30, tap_decrement_pct: 18, tap_rate_hz: -1.2, shimmer_local: 0.02, jitter_local: 0.004, voice_score: 0.25 },
+    mobility: { speed_m_s: -0.3, step_length_m: -0.12, stride_time_cv_pct: 2 },
+    voice_cold: { hnr_db: -5, shimmer_local: 0.025, jitter_local: 0.004 },
+  };
+  function simulateHistory({ days = 56, scenario = "stable", changeStart = 28, rampDays = 21, seed = 1, skipProb = 0.15, acuteDay = null } = {}) {
+    let s = seed >>> 0; const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let x = s; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const out = [], start = Date.UTC(2026, 8, 1);
+    for (let d = 0; d < days; d++) {
+      if (rnd() < skipProb) continue;
+      const f = Math.min(1, Math.max(0, (d - changeStart) / rampDays));
+      const metrics = {};
+      for (const [k, [m, sdv]] of Object.entries(TYPICAL)) {
+        const drift = (DRIFT[scenario] && DRIFT[scenario][k]) || 0;
+        metrics[k] = m + drift * f + sdv * gauss();
+      }
+      if (acuteDay !== null && d === acuteDay) { metrics.asymmetry_pct += 40; metrics.tap_asymmetry_pct += 45; }
+      out.push({ date: new Date(start + d * 86400000).toISOString().slice(0, 10), metrics });
+    }
+    return out;
+  }
+
+  const setThreshold = (z) => { Z_SUSTAINED = z; };
+  const api = { REGISTRY, evaluate, simulateHistory, setThreshold };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NeuroBaseline = api;
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>/* Runs Google's MediaPipe Face Mesh and Pose models in the browser (WebAssembly, on-device) and turns
+   a video file or live camera into landmark time series for face.js and gait.js.
+   Model files load from window.NEUROSCREEN_MEDIAPIPE_BASE: "vendor/" when shipped with the page
+   (offline, for the robot), or the jsDelivr copy of the same npm packages. */
+(function (root) {
+  "use strict";
+  const VERSIONS = { face_mesh: "0.4.1633559619", pose: "0.5.1675469404" };
+  const base = (pkg) => {
+    const b = root.NEUROSCREEN_MEDIAPIPE_BASE || "vendor/";
+    return b.startsWith("http") ? `${b}@mediapipe/${pkg}@${VERSIONS[pkg]}/` : `${b}${pkg}/`;
+  };
+  // some hosts only serve common file types: the build can append ".wasm" to binary model files (they are fetched as raw bytes, so the type does not matter)
+  const RENAMED = /\.(binarypb|data|tflite)$/;
+  const fileName = (f) => (root.NEUROSCREEN_MEDIAPIPE_RENAMED && RENAMED.test(f) ? f + ".wasm" : f);
+  const loaded = {};
+  function loadScript(src) {
+    return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.crossOrigin = "anonymous"; s.onload = res; s.onerror = () => rej(new Error("Couldn't load " + src)); document.head.appendChild(s); });
+  }
+
+  async function model(kind) {
+    if (loaded[kind]) return loaded[kind];
+    if (kind === "face") {
+      await loadScript(base("face_mesh") + "face_mesh.js");
+      const m = new root.FaceMesh({ locateFile: (f) => base("face_mesh") + fileName(f) });
+      m.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+      await m.initialize();
+      loaded[kind] = m;
+    } else {
+      await loadScript(base("pose") + "pose.js");
+      const m = new root.Pose({ locateFile: (f) => base("pose") + fileName(f) });
+      m.setOptions({ modelComplexity: 0, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+      await m.initialize();
+      loaded[kind] = m;
+    }
+    return loaded[kind];
+  }
+
+  // one frame -> landmarks in pixels (or null)
+  async function detect(kind, m, source, W, H) {
+    let out = null;
+    m.onResults((r) => {
+      if (kind === "face") { const f = r.multiFaceLandmarks && r.multiFaceLandmarks[0]; out = f ? f.map((p) => [p.x * W, p.y * H, p.z * W]) : null; }
+      else { const p = r.poseLandmarks; out = p ? p.map((q) => [q.x * W, q.y * H, q.z * W, q.visibility ?? 1]) : null; }
+    });
+    await m.send({ image: source });
+    return out;
+  }
+
+  // step through a video file at a fixed frame rate (deterministic, independent of playback speed)
+  async function fromFile(kind, file, { fps = 15, maxSeconds = 20, onProgress } = {}) {
+    const m = await model(kind);
+    const v = document.createElement("video");
+    v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = URL.createObjectURL(file);
+    await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error("This browser can't play that video. Try an MP4 (H.264) file.")); });
+    const W = v.videoWidth, H = v.videoHeight, dur = Math.min(v.duration, maxSeconds);
+    const frames = [];
+    for (let t = 0; t < dur; t += 1 / fps) {
+      v.currentTime = t;
+      await new Promise((res) => { v.onseeked = res; });
+      frames.push({ t, lm: await detect(kind, m, v, W, H) });
+      if (onProgress) onProgress(t / dur);
+    }
+    URL.revokeObjectURL(v.src);
+    return { frames, width: W, height: H };
+  }
+
+  // live camera for a fixed time (used on the robot or a local copy; hosted viewers block the camera)
+  async function fromCamera(kind, videoEl, { seconds = 10, onProgress } = {}) {
+    const m = await model(kind);
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" }, audio: false });
+    videoEl.srcObject = stream; await videoEl.play();
+    const W = videoEl.videoWidth, H = videoEl.videoHeight, frames = [], t0 = performance.now();
+    while ((performance.now() - t0) / 1000 < seconds) {
+      const t = (performance.now() - t0) / 1000;
+      frames.push({ t, lm: await detect(kind, m, videoEl, W, H) });
+      if (onProgress) onProgress(t / seconds);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    stream.getTracks().forEach((tr) => tr.stop());
+    return { frames, width: W, height: H };
+  }
+
+  root.NeuroVision = { model, fromFile, fromCamera };
+})(typeof self !== "undefined" ? self : this);
 </script>
 <script>
-(function () {
+const MODEL = {"features": ["jitter_local", "jitter_rap", "jitter_ppq5", "period_cv", "shimmer_local", "shimmer_db", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11", "hnr_db"], "log_features": ["jitter_local", "jitter_rap", "jitter_ppq5", "period_cv", "shimmer_local", "shimmer_apq3", "shimmer_apq5", "shimmer_apq11"], "impute_median": [-6.505634664949371, -8.180720954795024, -7.338538195074591, -4.415547606129133, -2.8872366934994336, 0.5025, -3.576265309744802, -3.390109975941537, -3.046080644210619, 19.3095], "scaler_mean": [-6.401111863248238, -8.03215191842037, -7.238615064084238, -3.9393105474998062, -2.881055181045214, 0.6064195357804233, -3.568753261408651, -3.3818877368700666, -3.066223886820649, 18.859632275132274], "scaler_scale": [0.7572521866322998, 1.046699300344485, 0.9032335079913713, 1.2892767997545076, 0.6134349291632674, 0.3823165222887691, 0.6387675989920516, 0.6214693077934884, 0.6114764461564158, 5.572783354824129], "coef": [0.5467963427676241, -0.0019269850266173064, 0.37155380056956766, -0.26703015406320374, 0.5768539360199939, -0.20382118669142762, -0.4703589720516454, -0.47638905471394444, 0.9961377456145771, 0.14039955627498546], "intercept": 0.248254540031336, "reference": {"jitter_local": {"control": {"10": 0.0006106666666666667, "25": 0.0008091666666666667, "50": 0.0011133333333333334, "75": 0.001565, "90": 0.0025506666666666672}, "parkinsons": {"10": 0.0009493333333333334, "25": 0.0012291666666666668, "50": 0.0017766666666666668, "75": 0.0031225000000000003, "90": 0.0052396666666666685}}, "jitter_rap": {"control": {"10": 8.766666666666668e-05, "25": 0.00011333333333333334, "50": 0.000195, "75": 0.00035083333333333337, "90": 0.0005780000000000001}, "parkinsons": {"10": 0.00015, "25": 0.00020583333333333334, "50": 0.000375, "75": 0.0007250000000000001, "90": 0.0014486666666666671}}, "jitter_ppq5": {"control": {"10": 0.00023866666666666668, "25": 0.000295, "50": 0.0004016666666666667, "75": 0.0006833333333333334, "90": 0.0012426666666666669}, "parkinsons": {"10": 0.0003466666666666667, "25": 0.00047666666666666663, "50": 0.0008066666666666666, "75": 0.0014858333333333334, "90": 0.002694}}, "period_cv": {"control": {"10": 0.007126946703091825, "25": 0.008211969048425014, "50": 0.01280828182301935, "75": 0.05758656166234462, "90": 0.1599714458547296}, "parkinsons": {"10": 0.00784128067151951, "25": 0.009840915729555222, "50": 0.016353239794702493, "75": 0.1135238219881934, "90": 0.18946702815946642}}, "shimmer_local": {"control": {"10": 0.021922, "25": 0.030414999999999998, "50": 0.04558166666666666, "75": 0.06686166666666665, "90": 0.10652833333333335}, "parkinsons": {"10": 0.034553, "25": 0.043295, "50": 0.062335, "75": 0.08938166666666666, "90": 0.12211600000000002}}, "shimmer_db": {"control": {"10": 0.1891, "25": 0.27008333333333334, "50": 0.40249999999999997, "75": 0.5881666666666667, "90": 0.9378000000000002}, "parkinsons": {"10": 0.30426666666666663, "25": 0.38216666666666665, "50": 0.5675, "75": 0.8160000000000001, "90": 1.1422}}, "shimmer_apq3": {"control": {"10": 0.011596, "25": 0.015112500000000001, "50": 0.02326333333333333, "75": 0.036565833333333325, "90": 0.060985666666666674}, "parkinsons": {"10": 0.01612, "25": 0.021741666666666666, "50": 0.031683333333333334, "75": 0.04509166666666667, "90": 0.06119459690000006}}, "shimmer_apq5": {"control": {"10": 0.013872333333333334, "25": 0.019137499999999998, "50": 0.027193333333333333, "75": 0.041216666666666665, "90": 0.06044433333333335}, "parkinsons": {"10": 0.020053333333333333, "25": 0.026373333333333335, "50": 0.037145, "75": 0.05456333333333334, "90": 0.07460699999999999}}, "shimmer_apq11": {"control": {"10": 0.019275, "25": 0.024130833333333334, "50": 0.03570833333333333, "75": 0.050765833333333336, "90": 0.07561333333333334}, "parkinsons": {"10": 0.029807999999999998, "25": 0.0393625, "50": 0.0531821925, "75": 0.07555583333333334, "90": 0.09740900000000001}}, "hnr_db": {"control": {"10": 14.077533333333333, "25": 18.637416666666667, "50": 21.891666666666666, "75": 23.979749999999996, "90": 25.951}, "parkinsons": {"10": 10.777666666666667, "25": 15.548166666666667, "50": 18.282833333333336, "75": 21.81725, "90": 24.0911}}}, "trained_on": "Sakar et al. 2018 (UCI, CC BY 4.0): 252 people, 756 sustained /a/ recordings"};
+const RESULTS = {"sakar_n": 252, "sakar_pd": 188, "portable": {"subj_auc": 0.7629321808510638, "subj_bacc": 0.7081615691489361, "subj_sens": 0.6835106382978724, "subj_spec": 0.7328125}, "leak": {"grouped_subj": 0.8998670212765958, "leaky_subj": 0.9860206117021276, "grouped_rec": 0.8817431294326241, "leaky_rec": 0.967507018321513}, "external": {"oxford": {"auc": 0.90625, "bacc": 0.5833333333333334, "sens": 0.16666666666666666, "spec": 1.0, "n_subjects": 32, "n_pd": 24}, "italian": {"auc": 0.4512987012987013, "bacc": 0.44642857142857145, "sens": 0.8928571428571429, "spec": 0.0, "n_subjects": 50, "n_pd": 28}}, "shortcut": {"in_dataset_auc": 0.9857142857142858, "silence_only_auc": 0.8373376623376624, "silence_only_bacc": 0.8022727272727274, "physiology_model_transfer_auc": 0.4512987012987013, "noise_floor_db_median": {"pd": -39.34662104895128, "control": -65.71948996125965}, "biomarker_directions": {"jitter_local": {"pd_median": 0.00407961562482383, "control_median": 0.007098833398052416, "expected": "higher in PD", "observed": "lower in PD"}, "shimmer_local": {"pd_median": 0.029074490002553292, "control_median": 0.05197458063952963, "expected": "higher in PD", "observed": "lower in PD"}, "hnr_db": {"pd_median": 24.583720393519265, "control_median": 18.975330259069253, "expected": "lower in PD", "observed": "higher in PD"}}}, "spiral": {"dataset": "UCI digitized-tablet spiral drawings (Isenkul et al. 2014), features from github.com/shiwalisingh0/Parkinson-disease-detection-", "n_people": 77, "n_pd": 62, "n_control": 15, "all_tests": {"auc": 0.871989247311828, "auc_sd": 0.021768484582793825, "balanced_accuracy": 0.8633602150537636}, "static_spiral_only": {"auc": 0.8059139784946237, "auc_sd": 0.027817580455578635, "balanced_accuracy": 0.789731182795699}}, "synthetic": {"face": {"asymmetry_pct (inject 40%)": {"injected": 40, "measured": 40.3534, "ok": true}, "cheek_raise_pct (inject 25%)": {"injected": 25, "measured": 24.926, "ok": true}, "blink_rate_per_min (inject 6)": {"injected": 6, "measured": 6.0201, "ok": true}, "smile size ratio weak/normal (inject 0.42)": {"injected": 0.4166666666666667, "measured": 0.418, "ok": true}, "onset slower when injected slower (1 = yes)": {"injected": 1, "measured": 1, "ok": true}}, "gait": {"speed_m_s (inject 1.2)": {"injected": 1.2, "measured": 1.1931, "ok": true}, "speed_m_s (inject 0.8)": {"injected": 0.8, "measured": 0.796, "ok": true}, "speed_m_s, 155 cm person (inject 1.2)": {"injected": 1.2, "measured": 1.1917, "ok": true}, "cadence (inject 110)": {"injected": 110, "measured": 110.7876, "ok": true}, "step_length_m (inject 0.655)": {"injected": 0.6545454545454545, "measured": 0.6461, "ok": true}, "arm_swing_asym_pct (inject 60%)": {"injected": 60, "measured": 60.04, "ok": true}, "trunk_lean_deg (inject 15)": {"injected": 15, "measured": 14.9953, "ok": true}, "stride variability rises with injected variability (1 = yes)": {"injected": 1, "measured": 1, "ok": true}}, "tap": {"rate_hz (inject 5)": {"injected": 5, "measured": 4.8667, "ok": true}, "rate_hz (inject 3)": {"injected": 3, "measured": 2.9333, "ok": true}, "rhythm variability higher when injected (1 = yes)": {"injected": 1, "measured": 1, "ok": true}, "decrement_pct (inject 40% linear slowing, ~28% expected)": {"injected": 28, "measured": 26.087, "ok": true}, "decrement_pct (no slowing)": {"injected": 0, "measured": 0, "ok": true}}, "spiral": {"tremor_peak_hz (inject 5)": {"injected": 5, "measured": 5, "ok": true}, "tremor_peak_hz (inject 9)": {"injected": 9, "measured": 9, "ok": true}}}, "baseline_sim": {"note": "Simulated people with assumed day-to-day variability; real variability must be measured in a pilot.", "stable_people_with_any_prompt_in_8_weeks_pct": 2, "stable_people_with_discuss_or_urgent_prompt_pct": 0, "motor_drift_caught_pct": 100, "motor_median_days_after_change_starts": 16, "mobility_drift_caught_pct": 98, "mobility_median_days_after_change_starts": 13, "sudden_one_sided_change_caught_same_day_pct": 100}};
+</script>
+<script>(function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -1046,13 +1756,240 @@ const RESULTS = {"sakar_n": 252, "sakar_pd": 188, "portable": {"subj_auc": 0.762
     extRows.map((r) => `<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${fmt(r[2], 3)}</td><td class="n">${fmt(r[3], 2)}</td><td class="n">${fmt(r[4], 2)}</td><td>${pill(r[2])}</td><td class="small muted">${r[5]}</td></tr>`).join("") + "</tbody>";
   $("extText").textContent = "Sensitivity and specificity use the 0.5 threshold set in the training clinic. On Oxford the model ranks people well (AUC above 0.9) but flags too few of them at that threshold, so each new site needs its own threshold. On the Italian set it fails because that dataset's groups were recorded differently.";
 
+  const SR = R.synthetic;
+  const standsRows = [
+    ["Voice", "Own extractor; tracks Praat (Spearman 0.61 to 0.87); browser equals Python to 1e-11", `Logistic model trained on ${R.sakar_n} people. AUC ${fmt(R.portable.subj_auc, 2)} on held-out people, ${fmt(R.external.oxford.auc, 2)} on an external US cohort`, "Score + 10 measures"],
+    ["Spiral", "Pen or finger path", `Recovers injected 5 Hz and 9 Hz tremor exactly. Tablet model AUC ${fmt(R.spiral.static_spiral_only.auc, 2)} (not reused: device-specific)`, "Measures"],
+    ["Tap test", "Touch events", `Recovers injected speed (${fmt(SR.tap["rate_hz (inject 5)"].measured, 2)} vs 5 taps/s), rhythm and slowing`, "Measures"],
+    ["Smile", "Google MediaPipe Face Mesh, 468 points", `Recovers injected asymmetry (${fmt(SR.face["asymmetry_pct (inject 40%)"].measured, 1)}% vs 40%), cheek raise and blink rate in synthetic faces`, "Measures"],
+    ["Walking", "Google MediaPipe Pose, 33 points", `Recovers injected speed (${fmt(SR.gait["speed_m_s (inject 1.2)"].measured, 2)} vs 1.20 m/s), cadence, step length, arm asymmetry and lean`, "Measures"],
+    ["Weekly engine", "Person's own baseline", `200 simulated stable people: ${fmt(R.baseline_sim.stable_people_with_any_prompt_in_8_weeks_pct, 0)}% got any prompt in 8 weeks. Multi-test drift caught in ${fmt(R.baseline_sim.motor_drift_caught_pct, 0)}%`, "Plain-language prompts"],
+  ];
+  $("standsTable").innerHTML = `<thead><tr><th>Check</th><th>Perception</th><th>Validated how</th><th>Output</th></tr></thead><tbody>` + standsRows.map((r) => `<tr><td>${r[0]}</td><td class="small">${r[1]}</td><td class="small">${r[2]}</td><td class="small muted">${r[3]}</td></tr>`).join("") + "</tbody>";
+
   // ---------------- initial state: examples already analysed ----------------
   function init() {
     analyseSamples(VOICE.simulate({ jitter: 0.003, shimmer: 0.025, noiseDb: -35, seed: 11 }), "synthetic steady voice");
     showSimulated({ tremorHz: 5, tremorAmp: 0.02 }, "synthetic 5 Hz tremor");
+    if (window.initExtra) window.initExtra();
   }
   const VOICE = window.NeuroVoice, SPIRAL = window.NeuroSpiral;
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(init); else init();
+})();
+</script>
+<script>/* UI for the tap test, smile check, walking check and weekly view. Runs after the voice/spiral UI. */
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fmt = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v) || !Number.isFinite(v)) ? "–" : Number(v).toFixed(d);
+  const FACE = window.NeuroFace, GAIT = window.NeuroGait, TAP = window.NeuroTap, BASE = window.NeuroBaseline, VISION = window.NeuroVision;
+  const R = RESULTS;
+
+  function setupCanvas(cv) {
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight || Number(cv.getAttribute("height"));
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w, h };
+  }
+  function tiles(id, list) {
+    $(id).innerHTML = list.map(([v, k, warn]) => `<div class="tile${warn ? " warn" : ""}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+  }
+  function status(id, msg, err) { $(id).textContent = msg || ""; $(id).classList.toggle("err", !!err); }
+
+  // generic line plot: series = [{x: [], y: [], color}], marks = [{x, color}]
+  function plot(cv, series, { marks = [], label = "", yMin, yMax, xLabel = "s" } = {}) {
+    const { ctx, w, h } = setupCanvas(cv); ctx.clearRect(0, 0, w, h);
+    const xs = series.flatMap((s) => s.x), ys = series.flatMap((s) => s.y).filter(Number.isFinite);
+    if (!xs.length) return;
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = yMin ?? Math.min(...ys), y1 = yMax ?? Math.max(...ys);
+    const padL = 8, padR = 8, padT = 16, padB = 18;
+    const X = (x) => padL + ((x - x0) / (x1 - x0 || 1)) * (w - padL - padR), Y = (y) => h - padB - ((y - y0) / (y1 - y0 || 1)) * (h - padT - padB);
+    ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(padL, h - padB); ctx.lineTo(w - padR, h - padB); ctx.stroke();
+    for (const m of marks) { ctx.strokeStyle = m.color; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(X(m.x), padT - 4); ctx.lineTo(X(m.x), padT + 4); ctx.stroke(); ctx.globalAlpha = 1; }
+    for (const s of series) {
+      ctx.strokeStyle = s.color; ctx.lineWidth = 1.6; ctx.beginPath(); let started = false;
+      s.x.forEach((x, i) => { const y = s.y[i]; if (!Number.isFinite(y)) return; started ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); started = true; });
+      ctx.stroke();
+    }
+    ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--font-mono");
+    ctx.fillText(label, padL, 11); ctx.fillText(`${fmt(x1 - x0, 0)} ${xLabel}`, w - padR - 40, h - 4);
+  }
+
+  // ---------------- TAP ----------------
+  const tc = $("tapCanvas"); let tapState = null; const tapData = { right: null, left: null };
+  const TAP_SECONDS = 15;
+  function tapTargets() { const w = tc.clientWidth, h = tc.clientHeight; const r = Math.min(w * 0.13, h * 0.32); return [{ x: w * 0.27, y: h / 2, r }, { x: w * 0.73, y: h / 2, r }]; }
+  function drawTap(flash) {
+    const { ctx, w, h } = setupCanvas(tc); ctx.clearRect(0, 0, w, h);
+    tapTargets().forEach((g, i) => {
+      ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, 2 * Math.PI);
+      ctx.fillStyle = flash === i ? css("--accent") : css("--card"); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = css("--accent"); ctx.stroke();
+    });
+    ctx.fillStyle = css("--muted"); ctx.font = "12px " + css("--font-body"); ctx.textAlign = "center";
+    ctx.fillText(tapState ? `${tapState.hand} hand · ${Math.max(0, TAP_SECONDS - (performance.now() - tapState.t0) / 1000).toFixed(0)} s` : "Press Start, then tap left, right, left, right…", w / 2, h - 10);
+    ctx.textAlign = "start";
+  }
+  function startTap(hand) {
+    tapState = { hand, t0: performance.now(), taps: [], targets: tapTargets() };
+    $("tapSource").textContent = "your taps"; status("tapStatus", `Tap now with your ${hand} hand`);
+    const tick = () => { if (!tapState) return; drawTap(); if ((performance.now() - tapState.t0) / 1000 >= TAP_SECONDS) finishTap(); else requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+  function finishTap() {
+    const s = tapState; tapState = null;
+    tapData[s.hand] = { duration_s: TAP_SECONDS, targets: s.targets, taps: s.taps };
+    status("tapStatus", tapData.right && tapData.left ? "" : `Done. Now do the ${s.hand === "right" ? "left" : "right"} hand.`);
+    renderTap();
+  }
+  tc.addEventListener("pointerdown", (e) => {
+    if (!tapState) return;
+    const r = tc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    tapState.taps.push({ t: (performance.now() - tapState.t0) / 1000, x, y });
+    const g = tapState.targets, k = Math.hypot(x - g[0].x, y - g[0].y) < Math.hypot(x - g[1].x, y - g[1].y) ? 0 : 1; drawTap(k);
+    e.preventDefault();
+  });
+  function renderTap() {
+    const res = TAP.analyse(tapData.right, tapData.left);
+    const row = (hand, m) => m && !m.error ? [
+      [`${fmt(m.rate_hz, 1)}/s`, `${hand}: taps per second`],
+      [`${fmt(m.iti_cv_pct, 0)}%`, `${hand}: rhythm variability`, m.iti_cv_pct > 20],
+      [`${fmt(m.decrement_pct, 0)}%`, `${hand}: slowing over 15 s`, m.decrement_pct > 15],
+    ] : m && m.error ? [["–", `${hand}: ${m.error}`]] : [];
+    tiles("tapTiles", [...row("Right", res.right), ...row("Left", res.left), ...(Number.isFinite(res.asymmetry_pct) ? [[`${fmt(res.asymmetry_pct, 0)}%`, "gap between hands", res.asymmetry_pct > 25]] : [])]);
+    const series = [];
+    for (const [hand, color] of [["right", css("--accent")], ["left", css("--pd")]]) {
+      const d = tapData[hand]; if (!d || d.taps.length < 3) continue;
+      const T = d.taps.map((p) => p.t); series.push({ x: T.slice(1), y: T.slice(1).map((t, i) => 1000 * (t - T[i])), color });
+    }
+    if (series.length) plot($("tapPlot"), series, { label: "ms between taps (blue right, red left)" });
+    drawTap();
+  }
+  $("tapRight").addEventListener("click", () => startTap("right"));
+  $("tapLeft").addEventListener("click", () => startTap("left"));
+  $("tapSyn").addEventListener("click", () => {
+    tapData.right = TAP.simulate({ rateHz: 4.8, seed: 21 }); tapData.left = TAP.simulate({ rateHz: 4.3, decrement: 0.15, seed: 22 });
+    $("tapSource").textContent = "synthetic example"; status("tapStatus", ""); renderTap();
+  });
+
+  // ---------------- FACE ----------------
+  function renderFace(r, label) {
+    $("faceSource").textContent = label;
+    if (r.error) { status("faceStatus", r.error, true); return; }
+    status("faceStatus", r.quality.warning || "", !!r.quality.warning);
+    const m = r.metrics;
+    tiles("faceTiles", [
+      [`+${fmt(m.width_gain_pct, 0)}%`, "mouth widening in the smile"],
+      [`${fmt(m.onset_s, 2)} s`, "time to reach full smile"],
+      [`${fmt(m.asymmetry_pct, 0)}%`, "left-right difference", m.asymmetry_pct > 25],
+      [`${fmt(m.cheek_raise_pct, 0)}%`, "eye narrowing (a genuine smile)"],
+      [`${fmt(m.blink_rate_per_min, 0)}/min`, "blink rate"],
+      [Number.isFinite(m.repeat_ratio) ? `${fmt(m.repeat_ratio, 2)}×` : "–", "second smile vs first"],
+    ]);
+    const s = r.series, earMed = [...s.ear].sort((a, b) => a - b)[Math.floor(s.ear.length / 2)];
+    const marks = []; let closed = false;
+    s.ear.forEach((e, i) => { const c = e < 0.6 * earMed; if (c && !closed) marks.push({ x: s.t[i], color: css("--muted") }); closed = c; });
+    plot($("facePlot"), [{ x: s.t, y: s.smile, color: css("--accent") }], { marks, label: "smile size over time · ticks = blinks", yMin: 0 });
+  }
+  async function runVision(kind, getFrames, label, statusId, render) {
+    try {
+      status(statusId, "Loading the on-device model…");
+      const { frames } = await getFrames((p) => status(statusId, `Analysing… ${Math.round(100 * p)}%`));
+      status(statusId, "");
+      render(frames, label);
+    } catch (e) {
+      status(statusId, String(e && e.message || e).includes("Permission") || (e && e.name === "NotAllowedError") ?
+        "The camera is blocked here. Upload a short video instead, or open demo.html from the repo on a device with a camera." : `Couldn't analyse that: ${e.message || e}`, true);
+    }
+  }
+  $("faceFile").addEventListener("change", (e) => {
+    const f = e.target.files[0]; if (!f) return; e.target.value = "";
+    runVision("face", (cb) => VISION.fromFile("face", f, { fps: 15, maxSeconds: 15, onProgress: cb }), f.name, "faceStatus", (fr, l) => renderFace(FACE.analyse(fr), l));
+  });
+  $("faceCam").addEventListener("click", () => {
+    const v = $("faceVideo"); v.hidden = false;
+    runVision("face", (cb) => VISION.fromCamera("face", v, { seconds: 10, onProgress: cb }), "your camera", "faceStatus", (fr, l) => { v.hidden = true; renderFace(FACE.analyse(fr), l); });
+  });
+  $("faceSynA").addEventListener("click", () => renderFace(FACE.analyse(FACE.simulate({})), "synthetic: typical"));
+  $("faceSynB").addEventListener("click", () => renderFace(FACE.analyse(FACE.simulate({ amplitude: 0.06, onset: 0.9, blinksPerMin: 7, seed: 8 })), "synthetic: reduced expression"));
+
+  // ---------------- WALK ----------------
+  function renderGait(r, label) {
+    $("gaitSource").textContent = label;
+    if (r.error) { status("gaitStatus", r.error, true); return; }
+    status("gaitStatus", "");
+    const m = r.metrics;
+    tiles("gaitTiles", [
+      [`${fmt(m.speed_m_s, 2)} m/s`, "walking speed", m.speed_m_s < 1.0],
+      [`${fmt(m.cadence_steps_min, 0)}`, "steps per minute"],
+      [`${fmt(m.step_length_m, 2)} m`, "step length"],
+      [`${fmt(m.stride_time_cv_pct, 1)}%`, "stride-time variability", m.stride_time_cv_pct > 4],
+      [`${fmt(m.arm_swing_left, 2)} / ${fmt(m.arm_swing_right, 2)} m`, "arm swing, left / right"],
+      [`${fmt(m.arm_swing_asym_pct, 0)}%`, "arm-swing asymmetry", m.arm_swing_asym_pct > 40],
+      [`${fmt(m.trunk_lean_deg, 0)}°`, "forward lean"],
+      [`${fmt(r.quality.distance_m, 1)} m`, `walked · ${r.quality.steps_found} steps found`],
+    ]);
+    const s = r.series;
+    plot($("gaitPlot"), [{ x: s.t, y: s.sep, color: css("--accent") }], { label: "ankle separation (m) · each peak is a step" });
+  }
+  const height = () => Number($("gaitHeight").value);
+  $("gaitFile").addEventListener("change", (e) => {
+    const f = e.target.files[0]; if (!f) return; e.target.value = "";
+    runVision("pose", (cb) => VISION.fromFile("pose", f, { fps: 20, maxSeconds: 15, onProgress: cb }), f.name, "gaitStatus", (fr, l) => renderGait(GAIT.analyse(fr, height()), l));
+  });
+  $("gaitCam").addEventListener("click", () => {
+    const v = $("gaitVideo"); v.hidden = false;
+    runVision("pose", (cb) => VISION.fromCamera("pose", v, { seconds: 8, onProgress: cb }), "your camera", "gaitStatus", (fr, l) => { v.hidden = true; renderGait(GAIT.analyse(fr, height()), l); });
+  });
+  $("gaitSynA").addEventListener("click", () => renderGait(GAIT.analyse(GAIT.simulate({ heightCm: height() }), height()), "synthetic: typical"));
+  $("gaitSynB").addEventListener("click", () => renderGait(GAIT.analyse(GAIT.simulate({ heightCm: height(), speed: 0.85, cadence: 98, armR: 0.1, lean: 11, strideJitter: 0.06, seconds: 8, seed: 7 }), height()), "synthetic: slower, uneven arms"));
+
+  // ---------------- WEEKLY ----------------
+  const SCEN = {
+    stable: { args: { scenario: "stable", seed: 41, days: 63 }, name: "Stable" },
+    motor: { args: { scenario: "motor", seed: 42, days: 63, changeStart: 28, rampDays: 21 }, name: "Slow drift across several tests" },
+    mobility: { args: { scenario: "mobility", seed: 43, days: 63, changeStart: 28, rampDays: 21 }, name: "Walking decline only" },
+    acute: { args: { scenario: "stable", seed: 44, days: 50, acuteDay: 49, skipProb: 0 }, name: "Sudden one-sided change" },
+  };
+  const SHOW = ["speed_m_s", "arm_swing_asym_pct", "smile_amplitude", "tap_decrement_pct", "shimmer_local", "asymmetry_pct"];
+  function mini(m) {
+    const W = 300, H = 92, pad = 6, pts = m.series, n = pts.length;
+    const lo = m.baseline - 4 * m.scale, hi = m.baseline + 4 * m.scale;
+    const vmin = Math.min(lo, ...pts.map((p) => p.v)), vmax = Math.max(hi, ...pts.map((p) => p.v));
+    const X = (i) => pad + (i / (n - 1)) * (W - 2 * pad), Y = (v) => H - 16 - ((v - vmin) / (vmax - vmin || 1)) * (H - 30);
+    const nb = Math.max(6, Math.min(14, n - 5));
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${m.label}: daily values against baseline">`;
+    s += `<rect x="${pad}" y="${Y(m.baseline + 2 * m.scale)}" width="${W - 2 * pad}" height="${Math.max(1, Y(m.baseline - 2 * m.scale) - Y(m.baseline + 2 * m.scale))}" fill="var(--control)" opacity="0.16"></rect>`;
+    s += `<line x1="${X(nb - 1)}" x2="${X(nb - 1)}" y1="10" y2="${H - 14}" stroke="var(--muted)" stroke-dasharray="3 3"></line>`;
+    s += `<polyline fill="none" stroke="var(--ink)" stroke-width="1.2" opacity="0.55" points="${pts.map((p, i) => `${X(i)},${Y(p.v)}`).join(" ")}"></polyline>`;
+    pts.forEach((p, i) => { const bad = i >= nb && p.z >= 1.5; s += `<circle cx="${X(i)}" cy="${Y(p.v)}" r="${bad ? 2.6 : 1.8}" fill="${bad ? "var(--pd)" : "var(--ink)"}" opacity="${bad ? 1 : 0.6}"></circle>`; });
+    s += `<text x="${pad}" y="${H - 2}" font-size="10.5" fill="var(--muted)" font-family="var(--font-mono)">${pts[0].date.slice(5)}</text><text x="${W - pad}" y="${H - 2}" font-size="10.5" fill="var(--muted)" font-family="var(--font-mono)" text-anchor="end">${pts[n - 1].date.slice(5)}</text>`;
+    return `<div class="mini"><div class="mini-head"><span>${m.label}</span>${m.sustained ? '<span class="pill bad">changed</span>' : m.acute ? '<span class="pill bad">sudden</span>' : '<span class="pill ok">usual</span>'}</div>${s}</svg></div>`;
+  }
+  function showWeekly(key) {
+    const sc = SCEN[key], hist = BASE.simulateHistory(sc.args), ev = BASE.evaluate(hist);
+    for (const k of Object.keys(SCEN)) $("sc" + k[0].toUpperCase() + k.slice(1)).classList.toggle("primary", k === key);
+    $("wkTitle").textContent = `What Piko would tell the family · ${sc.name}`;
+    const lvl = { urgent: "bad", discuss: "mid", watch: "mid" };
+    $("wkPrompts").innerHTML = ev.patterns.length ? ev.patterns.map((p) => `<div class="prompt"><span class="pill ${lvl[p.level]}">${p.level}</span><div><b>${p.title}</b><p class="small">${p.text}</p></div></div>`).join("") :
+      `<div class="prompt"><span class="pill ok">all usual</span><div><b>Nothing to report this week</b><p class="small">All ${Object.keys(ev.metrics).length} measures are within this person's usual range. Piko says nothing, so families aren't trained to ignore it.</p></div></div>`;
+    const flaggedFirst = [...SHOW].sort((a, b) => ((ev.metrics[b] && (ev.metrics[b].sustained || ev.metrics[b].acute)) ? 1 : 0) - ((ev.metrics[a] && (ev.metrics[a].sustained || ev.metrics[a].acute)) ? 1 : 0));
+    $("wkCharts").innerHTML = flaggedFirst.filter((k) => ev.metrics[k]).map((k) => mini(ev.metrics[k])).join("");
+    const b = R.baseline_sim;
+    $("wkStats").textContent = `In 200 simulated stable people over 8 weeks, ${fmt(b.stable_people_with_any_prompt_in_8_weeks_pct, 0)}% got any prompt and ${fmt(b.stable_people_with_discuss_or_urgent_prompt_pct, 0)}% got a "discuss with a doctor" prompt. A slow drift across several tests was caught in ${fmt(b.motor_drift_caught_pct, 0)}% of simulated people, a median ${b.motor_median_days_after_change_starts} days after it began. These rates depend on how much real people vary from day to day, which a pilot has to measure.`;
+  }
+  for (const k of Object.keys(SCEN)) $("sc" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => showWeekly(k));
+
+  let started = false;
+  window.initExtra = function () {
+    if (started) return; started = true;
+    tapData.right = TAP.simulate({ rateHz: 4.8, seed: 21 }); tapData.left = TAP.simulate({ rateHz: 4.3, decrement: 0.15, seed: 22 }); renderTap();
+    renderFace(FACE.analyse(FACE.simulate({})), "synthetic: typical");
+    renderGait(GAIT.analyse(GAIT.simulate({ heightCm: height() }), height()), "synthetic: typical");
+    showWeekly("motor");
+  };
+  // run once fonts are ready (canvas text uses them); the voice/spiral script may finish first
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(window.initExtra); else window.initExtra();
 })();
 </script>
 </body>
