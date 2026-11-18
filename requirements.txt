@@ -1,0 +1,9 @@
+numpy
+pandas
+scipy
+scikit-learn
+lightgbm
+librosa
+soundfile
+praat-parselmouth
+openpyxl
