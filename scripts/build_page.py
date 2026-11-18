@@ -2,14 +2,20 @@
 dist/artifact/  : page + vendored MediaPipe models (offline; what the robot or a hosted viewer loads)
 dist/demo.html  : same page loading MediaPipe from jsDelivr (open locally to use mic + camera)"""
 import json, os, shutil
-import pandas as pd
 RAW = os.environ.get("NEUROSCREEN_DATA", "data/raw")
 os.makedirs("dist/artifact", exist_ok=True)
 sak = json.load(open("results/sakar_eval.json"))
-s = pd.read_csv(f"{RAW}/sakar3/pd_speech_features.csv").groupby("id")["class"].first()
+# people and people with PD in the Sakar CSV; checked against the CSV when the data is downloaded,
+# so the page can be built from a fresh clone without the 1.5 GB download
+SAKAR_N, SAKAR_PD = 252, 188
+csv = f"{RAW}/sakar3/pd_speech_features.csv"
+if os.path.exists(csv):
+    import pandas as pd
+    s = pd.read_csv(csv).groupby("id")["class"].first()
+    assert (len(s), int(s.sum())) == (SAKAR_N, SAKAR_PD), "Sakar counts changed: update SAKAR_N and SAKAR_PD"
 port = sak["sakar_portable_grouped"][sak["chosen_model"]]
 R = {
-    "sakar_n": int(len(s)), "sakar_pd": int(s.sum()),
+    "sakar_n": SAKAR_N, "sakar_pd": SAKAR_PD,
     "portable": {k: port[k]["mean"] for k in ("subj_auc", "subj_bacc", "subj_sens", "subj_spec")},
     "leak": {"grouped_subj": sak["sakar_all_features_grouped"]["subj_auc"]["mean"], "leaky_subj": sak["sakar_all_features_leaky"]["subj_auc"]["mean"],
              "grouped_rec": sak["sakar_all_features_grouped"]["rec_auc"]["mean"], "leaky_rec": sak["sakar_all_features_leaky"]["rec_auc"]["mean"]},
