@@ -1,0 +1,30 @@
+{
+ "in_dataset_auc": 0.9857142857142858,
+ "silence_only_auc": 0.8373376623376624,
+ "silence_only_bacc": 0.8022727272727274,
+ "physiology_model_transfer_auc": 0.4512987012987013,
+ "noise_floor_db_median": {
+  "pd": -39.34662104895128,
+  "control": -65.71948996125965
+ },
+ "biomarker_directions": {
+  "jitter_local": {
+   "pd_median": 0.00407961562482383,
+   "control_median": 0.007098833398052416,
+   "expected": "higher in PD",
+   "observed": "lower in PD"
+  },
+  "shimmer_local": {
+   "pd_median": 0.029074490002553292,
+   "control_median": 0.05197458063952963,
+   "expected": "higher in PD",
+   "observed": "lower in PD"
+  },
+  "hnr_db": {
+   "pd_median": 24.583720393519265,
+   "control_median": 18.975330259069253,
+   "expected": "lower in PD",
+   "observed": "higher in PD"
+  }
+ }
+}

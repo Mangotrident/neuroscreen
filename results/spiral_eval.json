@@ -1,0 +1,16 @@
+{
+ "dataset": "UCI digitized-tablet spiral drawings (Isenkul et al. 2014), features from github.com/shiwalisingh0/Parkinson-disease-detection-",
+ "n_people": 77,
+ "n_pd": 62,
+ "n_control": 15,
+ "all_tests": {
+  "auc": 0.871989247311828,
+  "auc_sd": 0.021768484582793825,
+  "balanced_accuracy": 0.8633602150537636
+ },
+ "static_spiral_only": {
+  "auc": 0.8059139784946237,
+  "auc_sd": 0.027817580455578635,
+  "balanced_accuracy": 0.789731182795699
+ }
+}
